@@ -1,8 +1,11 @@
 
 
-import GeometryBasics: AbstractPoint, Point, Point2, AbstractPolygon, area, Point3
+import GeometryBasics: AbstractPoint, Point, Point2, AbstractPolygon, area, Point3, Polygon
 
-export SimplePolygon, area, centroid, normal, coordinates
+using GeneralPolygonClipper
+
+export SimplePolygon, area, centroid, normal, coordinates, simple2poly
+
 
 struct SimplePolygon{Dim,T,P<:AbstractPoint{Dim,T},L<:AbstractVector{P}} <: AbstractPolygon{Dim,T}
     contour::L
@@ -85,3 +88,35 @@ function centroid(p::SimplePolygon{3,T}) where {T}
     return C
     
 end
+
+import Base.union
+
+function gpc_operations(op::GPCOperation, p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64})
+
+    gpc1 = GPCPolygon([false], [coordinates(p1)])
+    gpc2 = GPCPolygon([false], [coordinates(p2)])
+
+    gpc = gpc_polygon_clip(op, gpc1, gpc2)
+
+    # If both polygons were convex, the output would be a single polygon
+    # In other cases there can be more than one output polygon.
+
+    return SimplePolygon.(gpc.contours)
+    
+end
+
+import Base.union
+union(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
+    gpc_operations(GPC_UNION, p1, p2)
+import Base.intersect
+intersect(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
+    gpc_operations(GPC_INT, p1, p2)
+import Base.(-)
+(-)(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
+    gpc_operations(GPC_DIFF, p1, p2)
+
+import Base.xor
+xor(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
+    gpc_operations(GPC_XOR, p1, p2)
+
+simple2poly(p::SimplePolygon{2,Float64}) = Polygon(coordinates(p))

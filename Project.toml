@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 Deldir = "64db5801-a3ae-51a7-b7d2-a0a5f0813e47"
+GeneralPolygonClipper = "1ef9aace-6893-4b14-abcd-6e0cb8bf6495"
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 
 [compat]
