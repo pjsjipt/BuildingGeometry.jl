@@ -3,6 +3,10 @@ uuid = "5fb171b4-8a69-45d3-9db0-72e8edc7ce8b"
 authors = ["Paulo Jabardo <pjabardo@ipt.br>"]
 version = "0.1.0"
 
+[deps]
+Deldir = "64db5801-a3ae-51a7-b7d2-a0a5f0813e47"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+
 [compat]
 julia = "1.7"
 
