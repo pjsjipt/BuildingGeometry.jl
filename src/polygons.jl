@@ -91,6 +91,18 @@ end
 
 import Base.union
 
+"""
+`gpc_operations(op::GPCOperation, p1, p2)`
+
+Performs boolean operations on 2D polygons. First the polygons
+are converted to [`GPCPolygon`](@ref). Then, performs the boolean
+operation specified by parameter `op` (see enum [`GPCOperation`](@ref)).
+
+Finally, convert the results to [`SimplePolygon`](@ref). There can be 
+more than one resulting polygon depending on the exact nature of `p1`, `p2`
+and `op`.
+
+"""
 function gpc_operations(op::GPCOperation, p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64})
 
     gpc1 = GPCPolygon([false], [coordinates(p1)])
