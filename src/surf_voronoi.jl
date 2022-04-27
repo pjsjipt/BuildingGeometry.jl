@@ -1,4 +1,4 @@
-import GeometryBasics: Point3
+import GeometryBasics: Point, Point3, Triangle
 
 
 project2d(p::SimplePolygon{3,T}, ex, ey) where {T} =
@@ -14,16 +14,23 @@ function get_basis(n)
     # axis are partially aligned with the original
     # 3D reference frame.
 
-    ex = Point3{Float64}(1.0, 0.0, 0.0)
-    ey = Point3{Float64}(0.0, 1.0, 0.0)
-    ez = Point3{Float64}(0.0, 0.0, 1.0)
+    ex = Point3(1.0, 0.0, 0.0)
+    ey = Point3(0.0, 1.0, 0.0)
+    ez = Point3(0.0, 0.0, 1.0)
 
     e = (ex, ey, ez)
     dx = sum( ex .* n)
     dy = sum( ey .* n)
     dz = sum( ez .* n)
-    # Figure out which axis is more perpendicular to the normal:
-    idx = argmin( abs.((dx, dy, dz)) )
+
+    # If the surface is almost horizontal idxmax=3
+    idxmax = argmax( abs.((dx, dy, dz)) )
+    if idxmax==3
+        idx = 2 # Y axis will be vertical
+    else
+        # Figure out which axis is more perpendicular to the normal:
+        idx = argmin( abs.((dx, dy, dz)) )
+    end
     # idx corresponds to the axis more nearly perpendicular.
     # Since in most buildings most faces are vertical or
     # approximately so, the upward direction will be the y axis

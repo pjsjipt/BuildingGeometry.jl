@@ -2,7 +2,9 @@
 
 import GeometryBasics: AbstractPoint, Point, Point2, AbstractPolygon, area, Point3, Polygon
 
-using GeneralPolygonClipper
+import GeneralPolygonClipper as gpc
+  
+
 
 export SimplePolygon, area, centroid, normal, coordinates, simple2poly
 
@@ -11,8 +13,13 @@ struct SimplePolygon{Dim,T,P<:AbstractPoint{Dim,T},L<:AbstractVector{P}} <: Abst
     contour::L
 end
 
+SimplePolygon(x::AbstractVector, y::AbstractVector) =
+    SimplePolygon([Point2(xx, yy) for (xx,yy) in zip(x,y)])
 
-SimplePolygon(pts::E) where {E<:AbstractVector{P}} where {P<:AbstractPoint{Dim,T}} where {Dim,T} = SimplePolygon{Dim,T,P,E}(pts)
+SimplePolygon(x::AbstractVector, y::AbstractVector, z::AbstractVector) =
+    SimplePolygon([Point3(xx, yy,zz) for (xx,yy,zz) in zip(x,y,z)])
+
+#SimplePolygon(pts::E) where {E<:AbstractVector{P}} where {P<:AbstractPoint{Dim,T}} where {Dim,T} = SimplePolygon{Dim,T,P,E}(pts)
 
 import GeometryBasics.coordinates
 coordinates(p::SimplePolygon) = p.contour
@@ -89,6 +96,7 @@ function centroid(p::SimplePolygon{3,T}) where {T}
     
 end
 
+import GeneralPolygonClipper: Vertex
 import Base.union
 
 """
@@ -103,32 +111,33 @@ more than one resulting polygon depending on the exact nature of `p1`, `p2`
 and `op`.
 
 """
-function gpc_operations(op::GPCOperation, p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64})
+function gpc_operations(op::gpc.GPCOperation, p1::SimplePolygon{2,Float64},
+                        p2::SimplePolygon{2,Float64})
 
-    gpc1 = GPCPolygon([false], [coordinates(p1)])
-    gpc2 = GPCPolygon([false], [coordinates(p2)])
+    gpc1 = gpc.GPCPolygon([false], [Vertex(p[1], p[2]) for p in coordinates(p1)])
+    gpc2 = gpc.GPCPolygon([false], [Vertex(p[1], p[2]) for p in coordinates(p2)])
 
-    gpc = gpc_polygon_clip(op, gpc1, gpc2)
+    gpcout = gpc.gpc_polygon_clip(op, gpc1, gpc2)
 
     # If both polygons were convex, the output would be a single polygon
     # In other cases there can be more than one output polygon.
 
-    return SimplePolygon.(gpc.contours)
+    return SimplePolygon.([[Point2{Float64}(v.x, v.y) for v in g] for g in gpcout.contours])
     
 end
 
 import Base.union
 union(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
-    gpc_operations(GPC_UNION, p1, p2)
+    gpc_operations(gpc.GPC_UNION, p1, p2)
 import Base.intersect
 intersect(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
-    gpc_operations(GPC_INT, p1, p2)
+    gpc_operations(gpc.GPC_INT, p1, p2)
 import Base.(-)
 (-)(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
-    gpc_operations(GPC_DIFF, p1, p2)
+    gpc_operations(gpc.GPC_DIFF, p1, p2)
 
 import Base.xor
 xor(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
-    gpc_operations(GPC_XOR, p1, p2)
+    gpc_operations(gpc.GPC_XOR, p1, p2)
 
 simple2poly(p::SimplePolygon{2,Float64}) = Polygon(coordinates(p))
