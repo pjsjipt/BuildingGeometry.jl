@@ -6,33 +6,33 @@ import GeneralPolygonClipper as gpc
   
 
 
-export SimplePolygon, area, centroid, normal, coordinates, simple2poly
+export ConvexPolygon, area, centroid, normal, coordinates, simple2poly
 
 
-struct SimplePolygon{Dim,T,P<:AbstractPoint{Dim,T},L<:AbstractVector{P}} <: AbstractPolygon{Dim,T}
+struct ConvexPolygon{Dim,T,P<:AbstractPoint{Dim,T},L<:AbstractVector{P}} <: AbstractPolygon{Dim,T}
     contour::L
 end
 
-SimplePolygon(x::AbstractVector, y::AbstractVector) =
-    SimplePolygon([Point2(xx, yy) for (xx,yy) in zip(x,y)])
+ConvexPolygon(x::AbstractVector, y::AbstractVector) =
+    ConvexPolygon([Point2(xx, yy) for (xx,yy) in zip(x,y)])
 
-SimplePolygon(x::AbstractVector, y::AbstractVector, z::AbstractVector) =
-    SimplePolygon([Point3(xx, yy,zz) for (xx,yy,zz) in zip(x,y,z)])
+ConvexPolygon(x::AbstractVector, y::AbstractVector, z::AbstractVector) =
+    ConvexPolygon([Point3(xx, yy,zz) for (xx,yy,zz) in zip(x,y,z)])
 
-#SimplePolygon(pts::E) where {E<:AbstractVector{P}} where {P<:AbstractPoint{Dim,T}} where {Dim,T} = SimplePolygon{Dim,T,P,E}(pts)
+#ConvexPolygon(pts::E) where {E<:AbstractVector{P}} where {P<:AbstractPoint{Dim,T}} where {Dim,T} = ConvexPolygon{Dim,T,P,E}(pts)
 
 import GeometryBasics.coordinates
-coordinates(p::SimplePolygon) = p.contour
+coordinates(p::ConvexPolygon) = p.contour
 
-area(p::SimplePolygon{2,T}) where {T} = area(coordinates(p))
+area(p::ConvexPolygon{2,T}) where {T} = area(coordinates(p))
 
-normal(p::SimplePolygon{2,T}) where {T} = area(coordinages(p))
+normal(p::ConvexPolygon{2,T}) where {T} = area(coordinages(p))
 
 crossprod(u::Point3, v::Point3) = (u[2]*v[3] - u[3]*v[2],
                                    u[3]*v[1] - u[1]*v[3],
                                    u[1]*v[2] - u[2]*v[1])
                                    
-function normal(p::SimplePolygon{3,T}) where {T}
+function normal(p::ConvexPolygon{3,T}) where {T}
     v = coordinates(p)
     nv = length(v)
     x,y,z = crossprod(v[end], v[begin])
@@ -48,14 +48,14 @@ function normal(p::SimplePolygon{3,T}) where {T}
     
 end
 
-area(p::SimplePolygon{3}) = hypot(normal(p)...)
+area(p::ConvexPolygon{3}) = hypot(normal(p)...)
 
 """
 `centroid(p)`
 
-Computes the centroid of a [`SimplePolygon`](@ref).
+Computes the centroid of a [`ConvexPolygon`](@ref).
 """                      
-function centroid(p::SimplePolygon{2,T}) where {T}
+function centroid(p::ConvexPolygon{2,T}) where {T}
 
     A = area(p)
 
@@ -77,7 +77,7 @@ function centroid(p::SimplePolygon{2,T}) where {T}
     return Point2{T}(Cx/6A, Cy/6A)
 end
 
-function centroid(p::SimplePolygon{3,T}) where {T}
+function centroid(p::ConvexPolygon{3,T}) where {T}
     v = coordinates(p)
     nv = length(v)
     nrm = normal(p)
@@ -106,13 +106,13 @@ Performs boolean operations on 2D polygons. First the polygons
 are converted to [`GPCPolygon`](@ref). Then, performs the boolean
 operation specified by parameter `op` (see enum [`GPCOperation`](@ref)).
 
-Finally, convert the results to [`SimplePolygon`](@ref). There can be 
+Finally, convert the results to [`ConvexPolygon`](@ref). There can be 
 more than one resulting polygon depending on the exact nature of `p1`, `p2`
 and `op`.
 
 """
-function gpc_operations(op::gpc.GPCOperation, p1::SimplePolygon{2,Float64},
-                        p2::SimplePolygon{2,Float64})
+function gpc_operations(op::gpc.GPCOperation, p1::ConvexPolygon{2,Float64},
+                        p2::ConvexPolygon{2,Float64})
 
     gpc1 = gpc.GPCPolygon([false], [Vertex(p[1], p[2]) for p in coordinates(p1)])
     gpc2 = gpc.GPCPolygon([false], [Vertex(p[1], p[2]) for p in coordinates(p2)])
@@ -122,22 +122,22 @@ function gpc_operations(op::gpc.GPCOperation, p1::SimplePolygon{2,Float64},
     # If both polygons were convex, the output would be a single polygon
     # In other cases there can be more than one output polygon.
 
-    return SimplePolygon.([[Point2{Float64}(v.x, v.y) for v in g] for g in gpcout.contours])
+    return ConvexPolygon.([[Point2{Float64}(v.x, v.y) for v in g] for g in gpcout.contours])
     
 end
 
 import Base.union
-union(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
+union(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
     gpc_operations(gpc.GPC_UNION, p1, p2)
 import Base.intersect
-intersect(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
+intersect(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
     gpc_operations(gpc.GPC_INT, p1, p2)
 import Base.(-)
-(-)(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
+(-)(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
     gpc_operations(gpc.GPC_DIFF, p1, p2)
 
 import Base.xor
-xor(p1::SimplePolygon{2,Float64}, p2::SimplePolygon{2,Float64}) =
+xor(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
     gpc_operations(gpc.GPC_XOR, p1, p2)
 
-simple2poly(p::SimplePolygon{2,Float64}) = Polygon(coordinates(p))
+simple2poly(p::ConvexPolygon{2,Float64}) = Polygon(coordinates(p))

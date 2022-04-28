@@ -1,8 +1,9 @@
 import GeometryBasics: Point, Point3, Triangle
 
 
-project2d(p::SimplePolygon{3,T}, ex, ey) where {T} =
-    SimplePolygon([Point2{T}(sum(ex*v), sum(ey*v)) for v in coordinates(p)])
+
+project2d(p::ConvexPolygon{3,T}, ex, ey) where {T} =
+    ConvexPolygon([Point2{T}(sum(ex*v), sum(ey*v)) for v in coordinates(p)])
 project2d(p::Triangle{3,T}, ex, ey) where {T} =
     Triangle([Point2{T}(sum(ex*v), sum(ey*v)) for v in coordinates(p)]...)
  
