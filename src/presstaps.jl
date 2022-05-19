@@ -1,10 +1,10 @@
 import GeometryBasics: Point, Point3, AbstractPoint
 
-export PressureTap, xcoord, ycoord, zcoord
+export PressureTap, xcoord, ycoord, zcoord, coordinates
 
-struct PressureTap{T} #<: AbstractPoint{Dim,T}
+struct PressureTap{T} <: AbstractPoint{3,T}
     "Coordinate of the pressure tap"
-    position::Point3{T}
+    coord::Point3{T}
     "Face to which the the pressure tap belongs"
     face::Int
     "Integer id of the pressure tap"
@@ -24,9 +24,10 @@ PressureTap(p::Point3{T}; face=1, id=1, isint=false, hasprob=false) where {T} =
 #import Base.getindex
 #getindex(p::PressureTap, i) = p.position[i]
 
-xcoord(p::PressureTap) = p.position[1]
-ycoord(p::PressureTap) = p.position[2]
-zcoord(p::PressureTap) = p.position[3]
+xcoord(p::PressureTap) = p.point[1]
+ycoord(p::PressureTap) = p.point[2]
+zcoord(p::PressureTap) = p.point[3]
+coordinates(p::PressureTap) = p.point
 
 
 import Base.convert

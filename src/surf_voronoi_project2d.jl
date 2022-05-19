@@ -59,12 +59,11 @@ function mean_mesh_normal(msh)
     nrm <- sum(normal(p) for p in msh)
     n⃗ = nrm ./ hypot(nrm...) # Unit vector
 
-    ex, ey, ez = get_basis(n⃗)
-
-    # Project each polygon on the surface:
+    return get_basis(n⃗)
     
 end
 
-    
+
+function discretizesurf(
 
     

@@ -140,4 +140,4 @@ import Base.xor
 xor(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
     gpc_operations(gpc.GPC_XOR, p1, p2)
 
-simple2poly(p::ConvexPolygon{2,Float64}) = Polygon(coordinates(p))
+simple2poly(p::SimplePolygon{2,Float64}) = Polygon(coordinates(p))
