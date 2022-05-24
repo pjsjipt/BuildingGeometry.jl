@@ -1,5 +1,5 @@
 #import GeometryBasics: Point, Point3, Triangle
-import Meshes: Point, Point3, Point2
+import GeometryBasics: Point, Point3, Point2, Vec, Vec2, Vec3, TriangleFace, Rectangle
 using LinearAlgebra
 import StaticArrays
 import GeneralPolygonClipper as gpc
@@ -9,10 +9,6 @@ using VoronoiCells
 struct SProject2d end
 
 
-project2d(p::ConvexPolygon{3,T}, ex, ey) where {T} =
-    ConvexPolygon([Point2{T}(sum(ex*v), sum(ey*v)) for v in coordinates(p)])
-project2d(p::Triangle{3,T}, ex, ey) where {T} =
-    Triangle([Point2{T}(sum(ex*v), sum(ey*v)) for v in coordinates(p)]...)
 
 function boundingbox2(pts)
     i = firstindex(pts)
@@ -261,34 +257,34 @@ function partition_faces(pts, facelist, fidx, e, p0)
     tessex = voronoicells(pts2, rect)
 
     # Array to store the 2d triangles, the face index and triangle index.
-    tri2d = Tuple{TriangleFace{Point2{Float64}}, Int, Int}[]
+    tri2d = Tuple{TriangleFace{Point2{Float64}}, Int, Int, Int}[]
     
     # Let's go through every Voronoi cell and intersect it with every triangle
     # in the faces
     for i in eachindex(pts)
         vpts = tessex.Cells[i] # Voronoi cell
-        (xmin1,ymin1), (xmax1,ymax1) = boundingbox(vpts)
+        (xmin1,ymin1), (xmax1,ymax1) = boundingbox2(vpts)
         # Create a GenericPolygonClipper.jl polygon
         pgpc = gpc.GPCPolygon([false], [[gpc.Vertex(v[1], v[2]) for v in vpts]])
         for (k, face)   in enumerate(faces2d)
             for (j, tri) in enumerate(face)
                 (xmin2, ymin2), (xmax2, ymax2) = boundingbox2(tri)
                 if !(xmax2 < xmin1 || xmax1 < xmin2 ||
-                    ymax2 < ymin1 || ymax1 < ymin2 ||)
+                    ymax2 < ymin1 || ymax1 < ymin2)
                     # There *might* be an intersection!
                     # If there is an intersection, we want it decomposed in triangle
                     # strips.
                     trigpc = gpc.GPCPolygon([false],
-                                            [[gpc.Vertex(v[1], v[2]) for v in tri]])
+                                            [[gpc.Vertex(tri[i][1], tri[i][2]) for i in 1:3]])
                     # Now we carry out the intersection between the Voronoi cell
                     # and the face triangle
                     trilst = gpc.intersect_strip(pgpc, trigpc)
                     for s in trilst
                         for l in 1:length(s)
                             vv = s[l]
-                            tri_new = TriangleFace(Point2{Float64}(vv[1]...),
-                                                   Point2{Float64}(vv[2]...),
-                                                   Point3{Float64}(vv[1]...))
+                            tri_new = TriangleFace(Point2{Float64}(vv[1].x, vv[1].y),
+                                                   Point2{Float64}(vv[2].x, vv[2].y),
+                                                   Point2{Float64}(vv[3].x, vv[3].y))
                             push!(tri2d, (tri_new, i, fidx[k], j))
                         end
                     end
@@ -299,10 +295,9 @@ function partition_faces(pts, facelist, fidx, e, p0)
             end
         end
     end
-
     # Project back to 3d.
     # And remember that the orientation might have been inverted
-    return [ (project_back(e, x[1], facelist[x[3]][x[4]]),
+    return [ (project_back(e, P₀, x[1], facelist[x[3]][x[4]]),
               x[2], x[3], x[4]) for x in tri2d ]
     
     
