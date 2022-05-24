@@ -129,7 +129,7 @@ function mean_mesh_normal(msh)
     
 end
 
-normal1(x) = (x[2]-x[1]) × (x[3]-x[1])
+normal1(x) = (x[2]-x[1]) × (x[3]-x[1]) / 2
 
     
 
@@ -158,33 +158,83 @@ function discrsurface(::Type{SProject2d}, faces, pext, fext,  pint, fint)
         end
     end
 
-    # Calculate the mean normal
+    # Calculate the mean normal of all external faces
     nrm = Vec3{Float64}(0,0,0)
-    for f in faces
+    for f in faces[fext]
         for tri in f
             n = normal1(tri)
-            nrm += A*n
+            nrm += n
         end
     end
 
-    nrm = nrm ./ hypot(nrm...)
+    nrm = nrm / norm(n)
     
     # Project points and faces on a plane normal to `nrm`
     e = get_basis(nrm) # Basis
 
 
     P₀ = Point3(0,0,0)
+
+    # Discretize external surface:
+    tri_ext = partition_faces(pext, faces, fext, e, P₀)
+
+    # Discretize internal surfaces, if there are any
+    if length(pint) > 0
+        # Get the mesh
+        tri_int = partition_faces(pint, faces, fint, e, P₀)
+
+        # Now we should intersec
+    end
+    
+end
+
+"""
+`partition_faces(pts, facelist, fidx, e, p0)`
+
+Partition a collection of faces in regions corresponding to a collection of points.
+
+The faces are collections of triangles and they are projected into a plane defined
+by point `p0` and normal `e[3]`. This plane has two direction vectors:
+
+ * `e[1]` that correspnds to the 2d axis direction vector î
+ * `e[2]` that correspnds to the 2d axis direction vector ĵ
+
+Once the points and faces are projected into the plane, a Voronoi tesselation
+is carried out with respect to the points and each Voronoi cell is intersected
+with each triangle that compose the faces. This intersection is represented
+as a set of triangles.
+
+## Arguments
+
+ * `pts` Vector of points
+ * `facelist` A vector containing every face in the model
+ * `fidx` Vector with indices of faces that should be processed
+ * `e` Basis defining the projection plane
+ * `p0` Origin of the 2d coordinate system on the projection plane
+
+## Return value
+
+This function returns a vector with a tuple containing a triangle, the index of
+the point, the index of the face that this triangle belongs to and the index of the 
+model triangle to which the triangle belongs.
+
+"""
+function partition_faces(pts, facelist, fidx, e, p0)
+
+    # Let's work with the necessary faces only!
+    faces = facelist[fidx]
+
+    # A plane is specified by a point and a normal. Just use the origin as the point
+    P₀ = p0
     # Project the triangles
-    faces2d = [[project_face(e, P₀, tri3) for tri3 in ff] for ff in faces]
+    faces2d = [[project_triangle(e, P₀, tri3) for tri3 in ff] for ff in faces]
 
-    # Project the pressure taps
-    pe2d = [Point2( (p - P₀) ⋅ e[1], (p-P₀)⋅e[2] ) for p in pext]
-    pi2d = [Point2( (p - P₀) ⋅ e[1], (p-P₀)⋅e[2] ) for p in pint]
+    # Project the points on thge same plane
+    pts2 = [Point2( (p - P₀) ⋅ e[1], (p-P₀)⋅e[2] ) for p in pts]
 
-    # of the points
+    # Get a bounding box of all the projected surfaces to create the Voronoi tesselation
     xmin, ymin = faces2d[1][1][1]
     xmax, ymax = xmin, ymin
-
     for f in faces2d
         for tri in f
             for i in 1:3
@@ -202,30 +252,82 @@ function discrsurface(::Type{SProject2d}, faces, pext, fext,  pint, fint)
             end
         end
     end
-
-    # Boundaing box
-    rect = Rectangle(Point2(xmin, ymin), Point2(xmax, ymax))
+    Δx = xmax - xmin; Δy = ymax - ymin
+    
+    # Bounding box. Let's make it bigger to ensure everything fits...
+    rect = Rectangle(Point2(xmin-Δx, ymin-Δy), Point2(xmax+Δx, ymax+Δy))
 
     # Voronoi tesselation of external points
-    tessex = voronoicells(pe2d, rect)
+    tessex = voronoicells(pts2, rect)
 
-    # Let's go through every Voronoi cell and intersect it
-    for i in eachindex(pe2d)
+    # Array to store the 2d triangles, the face index and triangle index.
+    tri2d = Tuple{TriangleFace{Point2{Float64}}, Int, Int}[]
+    
+    # Let's go through every Voronoi cell and intersect it with every triangle
+    # in the faces
+    for i in eachindex(pts)
         vpts = tessex.Cells[i] # Voronoi cell
-        (xmin1,ymin1), (xmax1,ymax1) = boundingbox(vpts) 
-        for face in faces2d
-            for tri in face
+        (xmin1,ymin1), (xmax1,ymax1) = boundingbox(vpts)
+        # Create a GenericPolygonClipper.jl polygon
+        pgpc = gpc.GPCPolygon([false], [[gpc.Vertex(v[1], v[2]) for v in vpts]])
+        for (k, face)   in enumerate(faces2d)
+            for (j, tri) in enumerate(face)
                 (xmin2, ymin2), (xmax2, ymax2) = boundingbox2(tri)
-                xposs = xmin1 > xmax2 || xmin2 
+                if !(xmax2 < xmin1 || xmax1 < xmin2 ||
+                    ymax2 < ymin1 || ymax1 < ymin2 ||)
+                    # There *might* be an intersection!
+                    # If there is an intersection, we want it decomposed in triangle
+                    # strips.
+                    trigpc = gpc.GPCPolygon([false],
+                                            [[gpc.Vertex(v[1], v[2]) for v in tri]])
+                    # Now we carry out the intersection between the Voronoi cell
+                    # and the face triangle
+                    trilst = gpc.intersect_strip(pgpc, trigpc)
+                    for s in trilst
+                        for l in 1:length(s)
+                            vv = s[l]
+                            tri_new = TriangleFace(Point2{Float64}(vv[1]...),
+                                                   Point2{Float64}(vv[2]...),
+                                                   Point3{Float64}(vv[1]...))
+                            push!(tri2d, (tri_new, i, fidx[k], j))
+                        end
+                    end
+                    
+                    
+                end
+                
             end
         end
-        
+    end
+
+    # Project back to 3d.
+    # And remember that the orientation might have been inverted
+    return [ (project_back(e, x[1], facelist[x[3]][x[4]]),
+              x[2], x[3], x[4]) for x in tri2d ]
     
     
+    
+  
+
 end
 
-                      
-function project_face(e, p, tri3)
+
+"""
+`project_triangle(e, p, tri3)`
+
+Project a 3d triangle into a plane defined by basis `e` with origin `p`.
+
+## Arguments
+
+ * `e` Tuple containing the basis. `e[1]` and `e[2]` are the vectors definind the plane and `e[3]` is the vector normal to the plane
+ * `p` 3d point which is used as origin in the plane
+ * `tri3` 3d Triangle that should be projected.
+
+## Return value
+
+A `2d TriangleFace` object containing the projected triangle.
+"""                      
+function project_triangle(e, p, tri3)
     v1 = Point2( (tri3[1]-p) ⋅ e[1], (tri3[1]-p) ⋅ e[2])
     v2 = Point2( (tri3[2]-p) ⋅ e[1], (tri3[2]-p) ⋅ e[2])
     v3 = Point2( (tri3[3]-p) ⋅ e[1], (tri3[3]-p) ⋅ e[2])
@@ -235,3 +337,89 @@ end
 
 
     
+"""
+`project_back(e, p, tri2d, tri0)`
+
+Project back a 2d triangle into the 3d surface of the model.
+
+
+This function projects a 2d triangle back into 3d space where the triangle 
+belongs to the surface defined by 3d triangle `tri0`. 
+
+The 2d plane where `tri2d` is defined has as origin the point `p` (3d) and
+unit direction vectors `î = e[1]` and `ĵ = e[2]`.
+
+The function will reorder the output vertices so that it has the same orientation
+as the 3d triangle `tri0`.
+
+## Arguments
+ * `e` Tuple with direction vectors defining the projection plane
+ * `p` 3d point which is used as origin in the 2d projection plane
+ * `tri2d` The 2d triangle that should be projected back
+ * `tri0` triangle that defines the 3d plane where the output triangle should be located.
+
+## Return value
+
+A `TriangleFace` corresponding to `tri2d` in the plane defined by `tri0`.
+"""
+function project_back(e, p, tri2d, tri0)
+    # Any point P in the same plane of a triangle
+    # can be computed as P - P₁ = α⋅u + β⋅v
+    # Where:
+    #  * P₁ is the first vertex of the triangle
+    #  * u is the vector from P₁ to P₂
+    #  * v is the vector from P₁ to P₃
+    # In the projected plane (basis `e`), this results
+    # in a system of equations M = [ux vx; uy vy]
+    # M⋅[α; β] = [x-x₁, y-y₁]
+    # Inverting M we can calculate α and β and now
+    # we can use the original definintion above to compute P.
+
+    # Project first vertex on the plane
+    vx₁ = (tri0[1]-p) ⋅ e[1]
+    vy₁ = (tri0[1]-p) ⋅ e[2]
+
+    u = tri0[2] - tri0[1]
+    v = tri0[3] - tri0[1]
+    ux = u ⋅ e[1]
+    uy = u ⋅ e[2]
+
+    vx = v ⋅ e[1]
+    vy = v ⋅ e[2]
+    
+    Δ = ux * vy - uy * vx
+
+    A11 =  vy / Δ; A12 = -vx / Δ
+    A21 = -uy / Δ; A22 =  ux / Δ
+
+    δx = tri2d[1][1] - vx₁
+    δy = tri2d[1][2] - vy₁
+    α = A11*δx + A12*δy
+    β = A21*δx + A22*δy
+    p1 = tri0[1] + α * u + β * v
+
+    δx = tri2d[2][1] - vx₁
+    δy = tri2d[2][2] - vy₁
+    α = A11*δx + A12*δy
+    β = A21*δx + A22*δy
+    p2 = tri0[1] + α * u + β * v
+
+    δx = tri2d[3][1] - vx₁
+    δy = tri2d[3][2] - vy₁
+    α = A11*δx + A12*δy
+    β = A21*δx + A22*δy
+    p3 = tri0[1] + α * u + β * v
+
+    # Check orientation of the nodes.
+    # If the normals are in the same direction, keep the order p1, p2, p3.
+    # Otherwise invert: p1, p3, p2.
+    if (u × v) ⋅ ( (p2-p1)×(p3-p1) ) > 0  
+        return TriangleFace(p1, p2, p3)
+    else
+        return TriangleFace(p1, p3, p2)
+    end
+    
+        
+    
+    
+end
