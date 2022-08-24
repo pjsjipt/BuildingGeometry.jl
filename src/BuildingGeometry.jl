@@ -1,8 +1,17 @@
 module BuildingGeometry
+import PyCall: pyimport, PyNULL 
+
+const pyvoronoi = Ref(PyNULL())
+
+function __init__()
+    pyvoronoi[] =  pyimport("scipy.spatial").Voronoi
+end
 
 
-include("presstaps.jl")
-#include("polygons.jl")
-include("surf_voronoi_project2d.jl")
+
+#include("presstaps.jl")
+include("polygons.jl")
+#include("surf_voronoi_project2d.jl")
+include("voronoi3d.jl")
 
 end

@@ -52,7 +52,6 @@ area(p::ConvexPolygon{3}) = hypot(normal(p)...)
 
 """
 `centroid(p)`
-
 Computes the centroid of a [`ConvexPolygon`](@ref).
 """                      
 function centroid(p::ConvexPolygon{2,T}) where {T}
@@ -101,15 +100,12 @@ import Base.union
 
 """
 `gpc_operations(op::GPCOperation, p1, p2)`
-
 Performs boolean operations on 2D polygons. First the polygons
 are converted to [`GPCPolygon`](@ref). Then, performs the boolean
 operation specified by parameter `op` (see enum [`GPCOperation`](@ref)).
-
 Finally, convert the results to [`ConvexPolygon`](@ref). There can be 
 more than one resulting polygon depending on the exact nature of `p1`, `p2`
 and `op`.
-
 """
 function gpc_operations(op::gpc.GPCOperation, p1::ConvexPolygon{2,Float64},
                         p2::ConvexPolygon{2,Float64})
@@ -140,4 +136,4 @@ import Base.xor
 xor(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
     gpc_operations(gpc.GPC_XOR, p1, p2)
 
-simple2poly(p::SimplePolygon{2,Float64}) = Polygon(coordinates(p))
+#simple2poly(p::SimplePolygon{2,Float64}) = Polygon(coordinates(p))
