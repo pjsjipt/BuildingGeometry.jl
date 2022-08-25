@@ -91,7 +91,7 @@ function centroid(p::ConvexPolygon{3,T}) where {T}
         s = sign(sum(Aᵢ⃗ .* n⃗))
         C += s * centr .* hypot(Aᵢ⃗...)
     end
-    return C
+    return C/A
     
 end
 

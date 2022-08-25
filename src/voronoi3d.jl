@@ -1,77 +1,9 @@
-import GeometryBasics: Point, Point2, Point3
+
+import GeometryBasics: AbstractPoint, Point, Point3
 
 export voronoi2d, voronoi3d,  VoronoiCell2d, makebbox
+export getpoint, getvertex
 
-
-function voronoi2d(x,y; bbox=nothing, nd=8)
-
-    length(x) == length(y) || error("Vectors x and y should have the same length")
-    
-    if isnothing(bbox)
-        xmin,xmax = extrema(x)
-        ymin,ymax = extrema(y)
-
-        Δ = max(xmax-xmin, ymax-ymin)  # A length for the domain
-
-        # Let's make a big bounding box
-        bbox = (x=(xmin-nd*Δ,xmax+nd*Δ), y=(ymin-nd*Δ, ymax+nd*Δ))
-    end
-
-    #=
-    The coordinates of the bounding box will make up 4 extra points
-    at the beggining of the point list. This is done so that the
-    volumes that contain the infinity point can be excluded.
-    =#
-
-    bx = repeat([bbox.x[1], bbox.x[2]], 2)
-    by = repeat([bbox.y[1], bbox.y[2]], inner=2)
-    nbb = length(bx) # Number of bounding box points
-    px = [bx;x]
-    py = [by;y]
-    
-    vor = pyvoronoi[]([px py])
-
-    regions = Vector{Int}[]
-    for idx in vor.point_region
-        push!(regions, vor.regions[idx+1] .+ 1) # Python is 0-based indexing!
-    end
-
-    # Let's get the vertices
-    vx = vor.vertices[:,1]
-    vy = vor.vertices[:,2]
-
-    # Let's get the ridges right
-    ridges = Dict{Tuple{Int,Int}, Tuple{Int,Int}}()
-    # We only care about ridges that don't contain infinity points!
-    for (p,v) in vor.ridge_dict
-        if v[1] < 0 || v[2] < 0
-            continue
-        end
-        k = (p[1]+1,p[2]+1) # Python indices...
-        v = (v[1]+1,v[2]+1)
-        ridges[k] = p
-    end
-    
-    
-    return vor, Point2.(px, py), Point2.(vx, vy), regions, ridges
-    
-end
-
-
-function build_voronoi_mesh2d(nb, vor, pts, verts, regions, ridges)
-    np = length(pts) - nb
-
-    
-
-end
-
-
-struct VoronoiCell2d{Dim,T}
-    p::Int
-    verts::Vector{Int}
-    edges::Vector{Tuple{Int,Int}}
-    neighs::Vector{Int}
-end
 
 function bboxaux!(xlims, p)
     x = repeat([xlims[1], xlims[2]], inner=p[1], outer=p[2])
@@ -155,17 +87,41 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
    
     for (pi, vi) in ridges
         i,k = pi
+
+        # Now we will create a polygon and check its orientation
+        # with respect to the points. If the normal of the polygon
+        # points towards point `i` it should be reversed and for
+        # point `k` the orientation is correct.
+        pface = ConvexPolygon(v[vi])
+        n⃗ = normal(pface)
+        # Let's create a vector point pointing from `i` to any vertex
+        # of the polygonal face:
+        u⃗ = v[vi[1]] - pp[i]
+        α = u⃗ ⋅ n⃗
         if i > nbb
-            push!(plst[i-nbb], vi)
+            if α > 0
+                push!(plst[i-nbb], vi)
+            else
+                push!(plst[i-nbb], reverse(vi))
+            end
+            
         end
         if k > nbb
-            push!(plst[k-nbb], vi)
+            if α > 0
+                push!(plst[k-nbb], reverse(vi))
+            else
+                push!(plst[k-nbb], vi)
+            end
         end
     end
 
+    # Setup data structure
+    cells = [ConvexPolyhedron(v, iface) for iface in plst]
+
+    return VoronoiMesh(p, v, cells)
     #faces = [[ConvexPolygon(v[idx]) for idx in ff] for ff in plst]
 
-    conn = volume2mesh.(plst)
+    #conn = volume2mesh.(plst)
 
     return vor, p,b,v,pp,regions, ridges, plst, conn
     
@@ -173,6 +129,46 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
     
 end
 
+function voronoi3d(pts::Point{3}; bbox=nothing, nd=8)
+    x = [p[1] for p in pts]
+    y = [p[2] for p in pts]
+    z = [p[3] for p in pts]
+    return voronoi3d(x, y, z; bbox=bbox, nd=nd)
+end
+
+             
+    
+    
+struct VoronoiMesh{Dim,T,P<:AbstractPoint{Dim,T},
+                   VP<:AbstractVector{P},
+                   VV<:AbstractVector{P},CP,
+                   VPO<:AbstractVector{CP}}
+    points::VP
+    vertices::VV
+    cells::VPO
+end
+
+function Base.show(io::IO, msh::VoronoiMesh{Dim,T}) where {Dim,T}
+    
+    println(io, "VoronoiMesh{$(string(Dim)),$(string(T))}")
+    println(io, "   - Number of cells: $(length(msh.points))")
+    println(io, "   - Number of vertices: $(length(msh.vertices))")
+end
+
+
+getpoint(v::VoronoiMesh) = v.points
+getpoint(v::VoronoiMesh, idx) = v.points[idx]
+
+getvertex(v::VoronoiMesh) = v.vertices
+getvertex(v::VoronoiMesh, idx) = v.vertices[idx]
+
+Base.getindex(v::VoronoiMesh) = v.cells
+Base.getindex(v::VoronoiMesh, idx) = v.cells[idx]
+
+
+
+
+    
 function volume2mesh(faceidx)
 
     # Convert to triangles
