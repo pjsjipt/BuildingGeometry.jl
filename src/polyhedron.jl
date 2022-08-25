@@ -4,7 +4,7 @@ import LinearAlgebra: ⋅,norm
 import GeometryBasics
 import GeometryBasics: Polytope
 
-export ConvexPolyhedron, numfaces, poly2mesh
+export ConvexPolyhedron, numfaces, poly2mesh, volume, numvertices
 
 
 
@@ -72,7 +72,9 @@ function pnpoly(poly::ConvexPolyhedron, p::Point)
     end
     return true
 end
+Base.in(p::Point, poly::ConvexPolyhedron) = pnpoly(poly, p)
 
+import GeometryBasics: volume
 """
 `volume(p::ConvexPolyhedron)`
 
@@ -80,7 +82,7 @@ Computes the volume of a convex polyhedron.
 
 The approach used is to find a point a inside and sum 
 """
-function GeometryBasics.volume(p::ConvexPolyhedron{T}) where {T}
+function volume(p::ConvexPolyhedron{T}) where {T}
 
     # Let's choose a point: any vertex.
     pt = p.vertices[p.vlist[begin]]
@@ -95,7 +97,7 @@ function GeometryBasics.volume(p::ConvexPolyhedron{T}) where {T}
         # Measure the distance from point pt to the plane of the face.
         # This should be a negative number (outward normal...)
         h = (pt - face.contour[begin]) ⋅ n⃗
-        vol += A*h/3
+        vol -= A*h/3
     end
 
     return vol
