@@ -4,7 +4,7 @@ import LinearAlgebra: ⋅,norm
 import GeometryBasics
 import GeometryBasics: Polytope
 
-export ConvexPolyhedron, numfaces, poly2mesh, volume, numvertices
+export ConvexPolyhedron, numfaces, poly2mesh, volume, numvertices, Rect
 
 
 
@@ -47,6 +47,10 @@ getvertex(p::ConvexPolyhedron, i) = p.vertices[p.vlist[i]]
 
 numfaces(p::ConvexPolyhedron) = length(p.faces)
 numvertices(p::ConvexPolyhedron) = length(p.vlist)
+
+import GeometryBasics.Rect
+
+Rect(p::ConvexPolyhedron) = Rect(p.vertices[p.vlist])
 
 """
 `pnpoly(poly::ConvexPolyhedron, p::Point)`
@@ -146,6 +150,10 @@ function centroid(p::ConvexPolyhedron{T}) where {T}
     
 end
 
+import Base.extrema
+extrema(p::ConvexPolyhedron) = extrema(p.vertices[p.vlist])
+
+    
 
 """
 `poly2mesh(poly::ConvexPolyhedron)`
