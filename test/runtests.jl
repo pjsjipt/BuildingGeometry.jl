@@ -2,5 +2,7 @@ using BuildingGeometry
 using Test
 
 @testset "BuildingGeometry.jl" begin
-    # Write your tests here.
+
+    include("test_polygon.jl")
+    
 end

@@ -6,7 +6,7 @@ import GeneralPolygonClipper as gpc
   
 
 
-export ConvexPolygon, area, centroid, normal, coordinates, simple2poly
+export ConvexPolygon, area, centroid, normal, coordinates, simple2poly, pnpoly
 
 
 struct ConvexPolygon{Dim,T,P<:AbstractPoint{Dim,T},L<:AbstractVector{P}} <: AbstractPolygon{Dim,T}
@@ -24,10 +24,39 @@ ConvexPolygon(x::AbstractVector, y::AbstractVector, z::AbstractVector) =
 import GeometryBasics.coordinates
 coordinates(p::ConvexPolygon) = p.contour
 
-area(p::ConvexPolygon{2,T}) where {T} = area(coordinates(p))
+function normal(p::ConvexPolygon{2})
+    pts = coordinates(p)
+    
+    A = pts[end][1] * pts[begin][2] - pts[begin][1] * pts[end][2]
 
-normal(p::ConvexPolygon{2,T}) where {T} = area(coordinages(p))
+    for i in firstindex(pts)+1:lastindex(pts)
+        A += pts[i-1][1]*pts[i][2] - pts[i][1]*pts[i-1][2]
+    end
+    return A/2
+end
 
+
+area(p::ConvexPolygon{2}) = abs(normal(p))
+    
+function pnpoly(poly::ConvexPolygon{2}, p::Point{2})
+
+    test = false
+    v = coordinates(poly)
+    j = lastindex(v)
+    for i in eachindex(v)
+        if (  (v[i][2] > p[2]) != (v[j][2]>p[2]) ) &&
+            ( p[1] ≤ (v[j][1]-v[i][1])*(p[2]-v[i][2]) / (v[j][2]-v[i][2]) + v[i][1])
+            test = !test
+        end
+    end
+    return test
+    
+end
+
+Base.in(pt, p::ConvexPolygon) = pnpoly(p, pt)
+
+
+    
 crossprod(u::Point3, v::Point3) = (u[2]*v[3] - u[3]*v[2],
                                    u[3]*v[1] - u[1]*v[3],
                                    u[1]*v[2] - u[2]*v[1])
@@ -50,13 +79,15 @@ end
 
 area(p::ConvexPolygon{3}) = hypot(normal(p)...)
 
+
+
 """
 `centroid(p)`
 Computes the centroid of a [`ConvexPolygon`](@ref).
 """                      
 function centroid(p::ConvexPolygon{2,T}) where {T}
 
-    A = area(p)
+    A = normal(p)
 
     v = coordinates(p)
     nv = length(v)
@@ -94,6 +125,27 @@ function centroid(p::ConvexPolygon{3,T}) where {T}
     return C/A
     
 end
+
+
+function poly2mesh(poly::ConvexPolygon)
+    pts = coordinates(poly)
+    
+   
+    ntri = length(pts) - 2
+    conn = zeros(Int, ntri, 3)
+
+    idx = 1
+    for i in firstindex(pts)+1:lastindex(pts)-1
+        conn[idx,1] = firstindex(pts)
+        conn[idx,2] = i
+        conn[idx,3] = i+1
+        idx += 1
+    end
+
+    return pts, conn
+end
+
+
 
 import GeneralPolygonClipper: Vertex
 import Base.union
