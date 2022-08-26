@@ -62,7 +62,8 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::TriangleFace{P}) whe
     segments =  [intersectfaceplane(poly[i], plane) for i in numfaces(poly)]
 
     # Now we need to connect the segments so that they form a polygon in the plane
-
+    poplane = segments2polygon(segments)
+    
 
     # We can intersect this polygon with the triangle.
     # To do this, we need to project both the triangle and the polygon
@@ -86,18 +87,35 @@ function intersectfaceplane(f::ConvexPolygon{3,T,P}, pl::Plane{T,P,V}) where {T,
         return P[]
     end
     ipts = P[]
+    foundprev = false
     if s[begin] == 0  # Test the first point
         push!(ipts, pts[begin])
+        foundprev = true
     end
+    nsegs = 0 # Number of segments *in* the plane
     for i in firstindex(s):lastindex(s)-1
         if s[i+1] == 0 # The previous point has been tested. Test the end of seg.
             push!(ipts, pts[i+1])
+            if foundprev
+                # This means that the segment is in the plane
+                nsegs += 1
+            end
         elseif s[i]*s[i+1] < 0  # Test
             push!(ipts, intersectpoint(pl.n, pl.p, pts[i], pts[i+1]))
+            foundprev = false
         end
     end
 
     # Test the last segement
+    if foundprev && s[begin]==0
+        nseg += 1
+    end
+
+    if nseg == 1
+        # There is a single segment in the plane. We don't care about this case
+        return P[]
+    end
+    
     if s[begin] * s[end] < 0
         push!(ipts, intersectpoint(pl.n, pl.p, pts[end], pts[begin]))
     end
@@ -122,3 +140,60 @@ function intersectpoint(n::P, p₀::P, p₁::P, p₂::P) where {T,P<:AbstractPoi
     return p₁ + ξ*Δp
 end
 
+
+"""
+`segs2poly(segs)`
+
+This functions takes different segments and joins them together to make a single
+"""
+function segments2polygon(segments::AbstractVector{Vector{P}}) where {P}
+
+    # The intersection of a *convex* polyhedron and a plane is:
+    # 1. Void
+    # 2. A single point - a vertex of the polyhedron. Forget it
+    # 3. A segment with 2 points
+    # 4. Several points - one of the faces of the polyhedron is part of the plane
+    
+    # Let's start with cases 1 and 4.
+    count_not_empty = 0   # Number of non empty  intersections
+    count_single_int = 0  #
+    for s in segments
+        ns = length(s)
+        if ns > 2
+            return ConvexPolygon(s)
+        elseif ns != 0
+            count_not_empty += 1
+        end
+    end
+    if count_not_empty == 0
+        # No intersection!
+        return ConvexPolygon(P[])
+    end
+
+    # The intersection 
+    #
+    # In the case of a segment, the seg
+    
+   
+    
+    pts = P[]
+    nsegs = length(segs)
+    seg_an = falses(nsegs)
+
+    while true
+        for i in eachindex(segs)
+            ni = length(nsegs[i])
+            
+            
+    for s in segs
+        slen = length(s)
+        if slen == 1
+            
+        end
+    end
+    
+end
+
+    
+    
+end
