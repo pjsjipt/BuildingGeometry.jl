@@ -1,5 +1,5 @@
 # Choping triangles with Convex polyhedrons
-
+import GeometryBasics: TriangleFace
 
 struct Plane{T,P<:AbstractPoint{3,T}, V<:AbstractPoint{3,T}}
     "Point through which the plane passes"
@@ -31,7 +31,9 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::TriangleFace{P}) whe
         
         nvin = 0
         for v in tri
-            v ∈ poly && nvin += 1
+            if v ∈ poly
+                nvin += 1
+            end
         end
         
         if nvin == 3 # The triangle is completely inside the polyhedron
@@ -69,9 +71,9 @@ end
 
 
 
-function intersectfaceplane(f::ConvexPolygon{3,T,P}, pl{T,P,V}) where {T,P,V}
+function intersectfaceplane(f::ConvexPolygon{3,T,P}, pl::Plane{T,P,V}) where {T,P,V}
     pts = coordinates(f)
-
+    rtol = 1e-8
     p₀ = pl.p
     n⃗ = pl.n
 
@@ -83,32 +85,40 @@ function intersectfaceplane(f::ConvexPolygon{3,T,P}, pl{T,P,V}) where {T,P,V}
         # No intersection
         return P[]
     end
-
     ipts = P[]
+    if s[begin] == 0  # Test the first point
+        push!(ipts, pts[begin])
+    end
     for i in firstindex(s):lastindex(s)-1
-        if s[i] == 0
-            push!(ipts, pts[i])
-        elseif s[i]*s[i+1] < 0 # There is an intersection
-            # Lets calculate the intersection point
-            push!(ipts, intersectpoint(pts[1], pts[2], pl))
-            continue
+        if s[i+1] == 0 # The previous point has been tested. Test the end of seg.
+            push!(ipts, pts[i+1])
+        elseif s[i]*s[i+1] < 0  # Test
+            push!(ipts, intersectpoint(pl.n, pl.p, pts[i], pts[i+1]))
         end
     end
-    # Now we need to check the last segment
-    if s[end] == 0
-        push!(ipts, pts[end])
-    elseif s[end]*s[begin] < 0 # AN intersection
-        push!(ipts, intersectpoint(pts[end], pts[begin], pl))
-    end
 
+    # Test the last segement
+    if s[begin] * s[end] < 0
+        push!(ipts, intersectpoint(pl.n, pl.p, pts[end], pts[begin]))
+    end
+        
     return ipts
     
 end
 
-function intersectpoint(n::P, p₀::P, p₁::P, p₂::P) where{T,P<:AbstractPoint{3,T}}
+"""
+`intersectpoint(n::P, p₀::P, p₁::P, p₂::P)`
 
-    ξ = ( (p₀-p₁)⋅n ) / ( (p₂-p₁)⋅n )
+Given a plane defined by point `p₀` and the normal `n`, get
+the intersection point with the plane of the line segment
+given by points `p₁` and `p₂`.
 
-    return p₁ + ξ * (p₂-p₁)
+This function assumes that there is an intersection and the segment is not
+contained in the plane.
+"""
+function intersectpoint(n::P, p₀::P, p₁::P, p₂::P) where {T,P<:AbstractPoint{3,T}}
+    Δp = p₂ - p₁
+    ξ = ((p₀ - p₁)⋅n) / (Δp⋅n)
+    return p₁ + ξ*Δp
 end
 
