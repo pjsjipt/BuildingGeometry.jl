@@ -84,10 +84,13 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
 
     # The ridges specify polygons between points
     plst = [Vector{Int}[] for i in 1:length(p)]
-   
+    conn = [Int[] for i in 1:length(p)]
+    
     for (pi, vi) in ridges
         i,k = pi
-
+        i1 = i > nbb ? i-nbb : 0
+        k1 = k > nbb ? k-nbb : 0
+        
         # Now we will create a polygon and check its orientation
         # with respect to the points. If the normal of the polygon
         # points towards point `i` it should be reversed and for
@@ -100,10 +103,11 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
         α = u⃗ ⋅ n⃗
         if i > nbb
             if α > 0
-                push!(plst[i-nbb], vi)
+                push!(plst[i1], vi)
             else
-                push!(plst[i-nbb], reverse(vi))
+                push!(plst[i1], reverse(vi))
             end
+            push!(conn[i1], k1)
             
         end
         if k > nbb
@@ -112,24 +116,20 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
             else
                 push!(plst[k-nbb], vi)
             end
+            push!(conn[k1], i1)
         end
     end
 
     # Setup data structure
     cells = [ConvexPolyhedron(v, iface) for iface in plst]
 
-    return VoronoiMesh(p, v, cells)
-    #faces = [[ConvexPolygon(v[idx]) for idx in ff] for ff in plst]
-
-    #conn = volume2mesh.(plst)
-
-    return vor, p,b,v,pp,regions, ridges, plst, conn
+    return VoronoiMesh(p, v, cells, conn)
     
     
     
 end
 
-function voronoi3d(pts::Point{3}; bbox=nothing, nd=8)
+function voronoi3d(pts::AbstractVector{<:AbstractPoint{3}}; bbox=nothing, nd=8)
     x = [p[1] for p in pts]
     y = [p[2] for p in pts]
     z = [p[3] for p in pts]
@@ -146,6 +146,7 @@ struct VoronoiMesh{Dim,T,P<:AbstractPoint{Dim,T},
     points::VP
     vertices::VV
     cells::VPO
+    conn::Vector{Vector{Int}}
 end
 
 function Base.show(io::IO, msh::VoronoiMesh{Dim,T}) where {Dim,T}

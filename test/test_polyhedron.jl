@@ -40,39 +40,5 @@ let
     @test Point(eps(), eps(), eps()) ∈ pp 
     @test Point(-eps(), eps(), eps()) ∉ pp
    
-    @test 2 ∈ pp.conn[1]
-    @test 4 ∈ pp.conn[1]
-    @test 5 ∈ pp.conn[1]
-    @test 6 ∈ pp.conn[1]
-
-    @test 1 ∈ pp.conn[2]
-    @test 3 ∈ pp.conn[2]
-    @test 5 ∈ pp.conn[2]
-    @test 6 ∈ pp.conn[2]
-
-    @test 2 ∈ pp.conn[3]
-    @test 4 ∈ pp.conn[3]
-    @test 5 ∈ pp.conn[3]
-    @test 6 ∈ pp.conn[3]
-
-    @test 1 ∈ pp.conn[4]
-    @test 3 ∈ pp.conn[4]
-    @test 5 ∈ pp.conn[4]
-    @test 6 ∈ pp.conn[4]
-
-    @test 1 ∈ pp.conn[5]
-    @test 2 ∈ pp.conn[5]
-    @test 3 ∈ pp.conn[5]
-    @test 4 ∈ pp.conn[5]
-
-    @test 1 ∈ pp.conn[6]
-    @test 2 ∈ pp.conn[6]
-    @test 3 ∈ pp.conn[6]
-    @test 4 ∈ pp.conn[6]
-    
-    for i in 1:6
-        @test length(pp.conn[i]) == 4
-    end
-    
     
 end

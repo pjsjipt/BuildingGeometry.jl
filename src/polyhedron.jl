@@ -15,13 +15,10 @@ struct ConvexPolyhedron{T,P<:AbstractPoint{3,T},VL<:AbstractVector{P}}
     vlist::Vector{Int}
     "Index of vertices of each face of the polyhedron"
     faces::Vector{Vector{Int}}
-    "Face connectivity"
-    conn::Vector{Vector{Int}}
 end
 
-function ConvexPolyhedron(vertices, faces::FI) where {I<:Integer, FI<:AbstractVector{<:AbstractVector{I}}}
-
-    vlist = Set{I}()
+function ConvexPolyhedron(vertices, faces)
+    vlist = Set{Int}()
     
     nf = length(faces)
     ff = Vector{Int}[]
@@ -34,29 +31,7 @@ function ConvexPolyhedron(vertices, faces::FI) where {I<:Integer, FI<:AbstractVe
         push!(ff, fi)
     end
 
-    # Build vertex connectivity
-    # By connectivity I mean faces that share an edge
-    conn = [Int[] for i in 1:nf]
-    
-    for i in 1:nf
-        fi = ff[i]
-        for k in i+1:nf
-            fk = ff[k]
-            # If a face shares an edge, they have 2 vertices in common.
-            nv = 0 
-            for v in fi
-                if v ∈ fk
-                    nv += 1
-                end
-            end
-            if nv == 2
-                push!(conn[i], k)
-                push!(conn[k], i)
-            end
-        end
-    end
-    
-    return ConvexPolyhedron(vertices, collect(vlist), faces, conn) 
+    return ConvexPolyhedron(vertices, collect(vlist), faces) 
 end
 
 function Base.show(io::IO, p::ConvexPolyhedron{T}) where {T}
