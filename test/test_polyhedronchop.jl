@@ -20,58 +20,66 @@ let B = BuildingGeometry
     p = B.intersectpoint(n⃗, p₀, p₁, p₂)
     @test p ≈ Point(0.5, 0.5, 0.1)
 
-
-    pts = Point.([(1.0,-1.0,-1.0), (1.0,-1.0,+1.0), (1.0,1.0,1.0), (1.0,1.0,-1.0)])
-    po = ConvexPolygon(pts)
-    @test normal(po) ≈ Point(-4.0,0.0,0.0)
-    n = Point(0.0, 0.0, 1.0)
-    u = Point(1.0, 0.0, 0.0)
-    v = Point(0.0, 1.0, 0.0)
-    p₀ = Point(0.0, 0.0, 0.0)
-    plane = B.Plane(p₀, n, u, v)
-    ipts = B.intersectfaceplane(po, plane)
-    @test length(ipts) == 2
-    @test ipts[1] ≈ Point(1.0, -1.0, 0.0)
-    @test ipts[2] ≈ Point(1.0, +1.0, 0.0)
-
-
-    pts = Point.([(1.0,0.0,0.0), (1.0,+1.0,+1.0), (1.0,1.0,-1.0)])
-    po = ConvexPolygon(pts)
-    @test normal(po) ≈ Point(-1.0,0.0,0.0)
-    ipts = B.intersectfaceplane(po, plane)
-    @test length(ipts) == 2
-    @test ipts[1] ≈ Point(1.0, 0.0, 0.0)
-    @test ipts[2] ≈ Point(1.0, 1.0, 0.0)
-
-
-    pts = Point.([(1.0,0.0,0.0), (1.0,+1.0,+1.0), (1.0,-1.0,1.0)])
-    po = ConvexPolygon(pts)
-    @test normal(po) ≈ Point(1.0,0.0,0.0)
-    ipts = B.intersectfaceplane(po, plane)
-    @test length(ipts) == 1
-    @test ipts[1] ≈ Point(1.0, 0.0, 0.0)
-
-    # Just circulate the points
-    pts = Point.([(1.0,-1.0,1.0), (1.0,0.0,0.0), (1.0,+1.0,+1.0)])
-    po = ConvexPolygon(pts)
-    @test normal(po) ≈ Point(1.0,0.0,0.0)
-    ipts = B.intersectfaceplane(po, plane)
-    @test length(ipts) == 1
-    @test ipts[1] ≈ Point(1.0, 0.0, 0.0)
-
-    pts = Point.([(1.0,0.0, eps()), (1.0,+1.0,+1.0), (1.0,-1.0,1.0)])
-    s = [(p-p₀)⋅n for p in pts]
-    po = ConvexPolygon(pts)
-    ipts = B.intersectfaceplane(po, plane)
-    @test length(ipts) == 0
-
-    pts = Point.([(1.0,0.0, -eps()), (1.0,+1.0,+1.0), (1.0,-1.0,1.0)])
-    s = [(p-p₀)⋅n for p in pts]
-    po = ConvexPolygon(pts)
-    ipts = B.intersectfaceplane(po, plane)
-    @test length(ipts) == 2
     
+    # Testing `cut_with_plane`
+
+    p0 = Point(0.0, 0.0, 0.0)
+    n = Point(-1.0, 0.0, 0.0)
+    pts = Point3.([(-1.0,-1.0,0.0), (1.0,-1.0,0.0), (1.0,1.0,0.0), (-1.0,1.0,0.0)])
     
+    out = cut_with_plane(pts, p0, n)
+    @test length(out) == 4
+    @test out[1] ≈ Point(0.0, -1.0, 0.0) 
+    @test out[4] ≈ Point(0.0, 1.0, 0.0)
+   
+    pts = Point3.([(-1.0,-1.0,0.0), (1.0,-1.0,0.0), (-1.0, 0.0, 0.0), (1.0,1.0,0.0),
+                   (-1.0,1.0,0.0)])
+    
+    out = cut_with_plane(pts, p0, n)
+    @test length(out) == 6
+    @test out[1] ≈ Point(0.0, -1.0, 0.0)
+    @test out[3] ≈ Point(0.0, -0.5, 0.0)
+    @test out[4] ≈ Point(0.0,  0.5, 0.0)
+    @test out[6] ≈ Point(0.0,  1.0, 0.0)
+
+
+    p0 = Point(0.0, 5.0, 5.0)
+    n = Point(1.0, 0.0, 0.0)
+
+    pts = Point3.([(-1.0,-1.0,0.0), (1.0,-1.0,0.0), (-1.0, 0.0, 0.0), (1.0,1.0,0.0),
+                   (-1.0,1.0,0.0)])
+    out = cut_with_plane(pts, p0, n, false)
+    @test length(out) == 7
+    @test out[1] == pts[1]
+    @test out[2] ≈ Point(0.0, -1.0, 0.0)
+    @test out[3] ≈ Point(0.0, -0.5, 0.0)
+    @test out[4] ≈ Point(-1.0, 0.0, 0.0)
+    @test out[5] ≈ Point(0.0,  0.5, 0.0)
+    @test out[6] ≈ Point(0.0,  1.0, 0.0)
+    @test out[7] ≈ Point(-1.0,  1.0, 0.0)
+
+    out = cut_with_plane(pts, p0, n, true)
+    @test length(out) == 7
+    @test out[end] == pts[1]
+    @test out[1] ≈ Point(0.0, -1.0, 0.0)
+    @test out[2] ≈ Point(0.0, -0.5, 0.0)
+    @test out[3] ≈ Point(-1.0, 0.0, 0.0)
+    @test out[4] ≈ Point(0.0,  0.5, 0.0)
+    @test out[5] ≈ Point(0.0,  1.0, 0.0)
+    @test out[6] ≈ Point(-1.0,  1.0, 0.0)
+    
+    #@test out
+
+
+    p0 = Point(0.0, 0.0, 0.0)
+    n = Point(-1.0, 0.0, 0.0)
+    pts = Point3.([(0.0,-1.0,0.0), (1.0,-1.0,0.0), (1.0,1.0,0.0), (0.0,1.0,0.0)])
+    out = cut_with_plane(pts, p0, n, false)
+    @test pts ≈ out
+
+    out = cut_with_plane(pts, p0, n, true)
+    @test pts[1] == out[end]
+
     
 end
 

@@ -36,6 +36,7 @@ function normal(p::ConvexPolygon{2})
 end
 
 
+
 area(p::ConvexPolygon{2}) = abs(normal(p))
     
 function pnpoly(poly::ConvexPolygon{2}, p::Point{2})

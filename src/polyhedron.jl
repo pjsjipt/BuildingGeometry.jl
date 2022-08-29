@@ -8,27 +8,55 @@ export ConvexPolyhedron, numfaces, poly2mesh, volume, numvertices, Rect
 
 
 
-struct ConvexPolyhedron{T,P<:AbstractPoint{3,T},VL<:AbstractVector{P},I<:Integer,
-                        FI<:AbstractVector{<:AbstractVector{I}}}
-    "Vertices of the polyhedron"
+struct ConvexPolyhedron{T,P<:AbstractPoint{3,T},VL<:AbstractVector{P}}
+    "List of vertices"
     vertices::VL
     "Index of each individual vertex"
-    vlist::Vector{I}
+    vlist::Vector{Int}
     "Index of vertices of each face of the polyhedron"
-    faces::FI
+    faces::Vector{Vector{Int}}
+    "Face connectivity"
+    conn::Vector{Vector{Int}}
 end
 
 function ConvexPolyhedron(vertices, faces::FI) where {I<:Integer, FI<:AbstractVector{<:AbstractVector{I}}}
 
     vlist = Set{I}()
-
+    
+    nf = length(faces)
+    ff = Vector{Int}[]
     for face in faces
+        fi = Int[]
         for i in face
             push!(vlist, i)
+            push!(fi,i)
+        end
+        push!(ff, fi)
+    end
+
+    # Build vertex connectivity
+    # By connectivity I mean faces that share an edge
+    conn = [Int[] for i in 1:nf]
+    
+    for i in 1:nf
+        fi = ff[i]
+        for k in i+1:nf
+            fk = ff[k]
+            # If a face shares an edge, they have 2 vertices in common.
+            nv = 0 
+            for v in fi
+                if v ∈ fk
+                    nv += 1
+                end
+            end
+            if nv == 2
+                push!(conn[i], k)
+                push!(conn[k], i)
+            end
         end
     end
     
-    return ConvexPolyhedron(vertices, collect(vlist), faces) 
+    return ConvexPolyhedron(vertices, collect(vlist), faces, conn) 
 end
 
 function Base.show(io::IO, p::ConvexPolyhedron{T}) where {T}

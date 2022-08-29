@@ -1,7 +1,7 @@
 using BuildingGeometry
 using Test
 
-import GeometryBasics: Point
+import GeometryBasics: Point, Point3
 
 @testset "BuildingGeometry.jl" begin
 
