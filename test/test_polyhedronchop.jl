@@ -67,9 +67,6 @@ let B = BuildingGeometry
     @test out[4] ≈ Point(0.0,  0.5, 0.0)
     @test out[5] ≈ Point(0.0,  1.0, 0.0)
     @test out[6] ≈ Point(-1.0,  1.0, 0.0)
-    
-    #@test out
-
 
     p0 = Point(0.0, 0.0, 0.0)
     n = Point(-1.0, 0.0, 0.0)
@@ -80,6 +77,45 @@ let B = BuildingGeometry
     out = cut_with_plane(pts, p0, n, true)
     @test pts[1] == out[end]
 
+
+    # Testing the chopping itsel
+
+    pts0 = makebbox( (-1.0, 1.0), (-2.0, 2.0), (-4.0, 4.0) )
+    pts  = Point.(pts0...)
+
+    faces = [[1,2,6,5], [2,4,8,6], [4,3,7,8], [1,5,7,3], [1,3,4,2], [5,6,8,7]]
+    pp = ConvexPolyhedron(pts, faces)
+
+
+    # Trivial case: no intersection, outside the bounding boxes
+    tri = TriangleFace(Point(10.0,0.0,0.0), Point(10.5,0.0,0.0), Point(0.0,10.5,0.0))
+    ch  = chopwithpolyhedron(pp, tri)
+    @test length(ch) == 0
+
+    # Trivial case:  intersection, triangle inside polyhedron
+    tri = TriangleFace(Point(0.0,0.0,0.0), Point(0.5,0.0,0.0), Point(0.0,0.5,0.0))
+    ch  = chopwithpolyhedron(pp, tri)
+    @test length(ch) == 1
+    @test ch[1] == tri
+
+    tri = TriangleFace(Point(-2.0,0.0,0.0), Point(2.0,-2.0,0.0), Point(2.0,2.0,0.0))
+    ch  = chopwithpolyhedron(pp, tri)
+    @test length(ch) == 2
+    # The exact nodes are tricky.
+    pts = [Point(-1.0, -0.5, 0.0), Point(1.0, -1.5, 0.0), Point(1.0, 1.5, 0.0),
+           Point(-1.0, 0.5, 0.0)]
+    # I know the solution is two triangles
+    ii = 0
+    for (k,pt) in enumerate(pts)
+        if pt==ch[1][1]
+            ii = k
+        end
+    end
+    @test ch[1][2] ≈ pts[4]
+    @test ch[1][3] ≈ pts[1]
+
+    @test ch[2][2] ≈ pts[1]
+    @test ch[2][3] ≈ pts[2]
     
 end
 
