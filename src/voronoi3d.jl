@@ -40,18 +40,21 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
     at the beggining of the point list. This is done so that the
     volumes that contain the infinity point can be excluded.
     =#
-    #bx, by, bz = makebbox(bbox.x, bbox.y, bbox.z)
+    bx1, by1, bz1 = makebbox(bbox.x, bbox.y, bbox.z)
     xm = (bbox.x[1] + bbox.x[2])/2
     ym = (bbox.y[1] + bbox.y[2])/2
     zm = (bbox.z[1] + bbox.z[2])/2
-    bx = [bbox.x[1], bbox.x[2], xm, xm, xm, xm]
-    by = [ym, ym, bbox.y[1], bbox.y[2], ym, ym]
-    bz = [zm, zm, zm, zm, bbox.z[1], bbox.z[2]]
+    bx2 = [bbox.x[1], bbox.x[2], xm, xm, xm, xm]
+    by2 = [ym, ym, bbox.y[1], bbox.y[2], ym, ym]
+    bz2 = [zm, zm, zm, zm, bbox.z[1], bbox.z[2]]
+    bx = [bx1; bx2]
+    by = [by1; by2]
+    bz = [bz1; bz2]
     
-    nbb = length(bx) # Number of bounding box points
-    px = [bx;x]
-    py = [by;y]
-    pz = [bz;z]
+    nbb = length(bx1) + length(bx2) # Number of bounding box points
+    px = [bx; x]
+    py = [by; y]
+    pz = [bz; z]
     
     vor = pyvoronoi[]([px py pz])
 

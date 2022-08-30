@@ -28,15 +28,17 @@ function discrsurface(tri, pts::AbstractVector{Point{3,Float64}})
     zpmax = maximum(p[3] for p in pts)
 
 
-    xmin = min(xtmin, xpmin); ymin = min(ytmin, ypmin); zmin = min(ztmin, zpmin);
-    xmax = max(xtmax, xpmax); ymax = min(ytmax, ypmax); zmax = min(ztmax, zpmax);
+    xmin = min(xtmin, xpmin); ymin = min(ytmin, ypmin);
+    zmin = min(ztmin, zpmin);
+    
+    xmax = max(xtmax, xpmax); ymax = min(ytmax, ypmax);
+    zmax = min(ztmax, zpmax);
+    
     Δ = 10*max(xmax-xmin, ymax-ymin, zmax-zmin)
     bbox = (x = (xmin-Δ, xmax+Δ), y = (ymin-Δ, ymax+Δ), z = (zmin-Δ, zmax+Δ))
 
 
     vor = voronoi3d(pts, bbox=bbox)
-    return vor
-    
     # Chop each triangle with every polyhedron.
 
     # Each node of `pts` corresponds to a volume (polyhedron). We will
@@ -46,14 +48,16 @@ function discrsurface(tri, pts::AbstractVector{Point{3,Float64}})
     for vol in vor.cells
         id = Int[]
         trim = TriangleFace{Point{3,Float64}}[]
-        for i in 1:length(tri)
+        for i in 1:ntri
             t = tri[i]
             m = chopwithpolyhedron(vol, t)
             nm = length(m)
             if nm > 0
                 for ti in m
-                    push!(trim, ti)
-                    push!(id, i)
+                    if area(ti) > 0
+                        push!(trim, ti)
+                        push!(id, i)
+                    end
                 end
             end
         end

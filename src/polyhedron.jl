@@ -1,8 +1,9 @@
 
-import LinearAlgebra: ⋅,norm
+import LinearAlgebra: ⋅,norm, ×
 
 import GeometryBasics
 import GeometryBasics: Polytope
+import GeometryBasics: TriangleFace
 
 export ConvexPolyhedron, numfaces, poly2mesh, volume, numvertices, Rect
 
@@ -154,9 +155,52 @@ function centroid(p::ConvexPolyhedron{T}) where {T}
 end
 
 import Base.extrema
-extrema(p::ConvexPolyhedron) = extrema(p.vertices[p.vlist])
+function extrema(p::ConvexPolyhedron)
+    nv = length(p.vlist)
+    iv = p.vlist
+    v = p.vertices
+    p1 = v[iv[begin]]
 
+    xmax = xmin = p1[1]
+    ymax = ymin = p1[2]
+    zmax = zmin = p1[3]
+
+    for i in iv
+        x,y,z = v[i]
+        if x > xmax
+            xmax = x
+        elseif x < xmin
+            xmin = x
+        end
+        if y > ymax
+            ymax = y
+        elseif y < ymin
+            ymin = y
+        end
+        if z > zmax
+            zmax = z
+        elseif z < zmin
+            zmin = z
+        end
+        
+    end
+    return Point3(xmin, ymin, zmin), Point3(xmax, ymax, zmax)
+end
+
+function extrema(p::TriangleFace)
+
+    xmin = min(p[1][1], p[2][1], p[3][1])
+    xmax = max(p[1][1], p[2][1], p[3][1])
+    ymin = min(p[1][2], p[2][2], p[3][2])
+    ymax = max(p[1][2], p[2][2], p[3][2])
+    zmin = min(p[1][3], p[2][3], p[3][3])
+    zmax = max(p[1][3], p[2][3], p[3][3])
+    return Point3(xmin, ymin, zmin), Point3(xmax, ymax, zmax)
+end
     
+normal(tri::TriangleFace) = (tri[3]-tri[1]) × (tri[2]-tri[1]) ./ 2
+area(tri::TriangleFace) = norm(normal(tri))
+
 
 """
 `poly2mesh(poly::ConvexPolyhedron)`

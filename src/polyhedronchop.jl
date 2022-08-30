@@ -1,5 +1,4 @@
 # Choping triangles with Convex polyhedrons
-import GeometryBasics: TriangleFace
 
 
 export cut_with_plane, chopwithpolyhedron
@@ -8,7 +7,10 @@ function cut_with_plane(pts::Vector{P}, p0, n, circ=true) where{T,P<:AbstractPoi
     
     npts = length(pts)
     out = P[]
-
+    if length(pts) < 1
+        return out
+    end
+    
     p1 = pts[begin]
     slast = (p1 - p0) ⋅ n
     if slast <= 0
@@ -51,12 +53,10 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::TriangleFace{P}) whe
     let
         pmin,pmax = extrema(poly)
         tmin,tmax = extrema(tri)
-        
         if pmin[1] > tmax[1] || pmin[2] > tmax[2] || pmin[3] > tmax[3] ||
             tmin[1] > pmax[1] || tmin[2] > pmax[2] || tmin[3] > tmax[3]
             return TriangleFace{P}[]
         end
-    
         # Check if every triangle vertex is inside the Polyhedron.
         # This is another simple case
 
@@ -92,8 +92,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::TriangleFace{P}) whe
         p0 = coordinates(face)[1]
         pts = cut_with_plane(pts, p0, n)
     end
-
-    return [TriangleFace(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
+    return TriangleFace{P}[TriangleFace(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
 end
 
     
