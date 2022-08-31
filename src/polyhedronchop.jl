@@ -1,13 +1,12 @@
 # Choping triangles with Convex polyhedrons
 
 
-export cut_with_plane, chopwithpolyhedron
 
-function cut_with_plane(pts::Vector{P}, p0, n, circ=true; atol=1e-8) where{T,P<:AbstractPoint{T}}
+function cut_with_plane(pts::Vector{Point{3,T}}, p0, n, circ=true; atol=1e-8) where{T}
 
     
     npts = length(pts)
-    out = P[]
+    out = Point{3,T}[]
     if length(pts) < 1
         return out
     end
@@ -55,28 +54,30 @@ function cut_with_plane(pts::Vector{P}, p0, n, circ=true; atol=1e-8) where{T,P<:
 end
 
 
-function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::TriangleFace{P}; atol=1e-8) where {T,P<:AbstractPoint{3,T}}
-
+function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
+                            atol=1e-8) where {T}
+    
     # First we will check if there is any chance of intersection
+    TT = typeof(tri)
     let
-        pmin,pmax = extrema(poly)
-        tmin,tmax = extrema(tri)
+        pmin,pmax = coordinates.(extrema(boundingbox(poly)))
+        tmin,tmax = coordinates.(extrema(boundingbox(tri)))
         if pmin[1] > tmax[1] || pmin[2] > tmax[2] || pmin[3] > tmax[3] ||
             tmin[1] > pmax[1] || tmin[2] > pmax[2] || tmin[3] > tmax[3]
-            return TriangleFace{P}[]
+            return TT[]
         end
         # Check if every triangle vertex is inside the Polyhedron.
         # This is another simple case
 
         nvin = 0
-        for v in tri
+        for v in vertices(tri)
             if v ∈ poly
                 nvin += 1
             end
         end
         
         if nvin == 3 # The triangle is completely inside the polyhedron
-            return TriangleFace{P}[tri]
+            return [tri]
         end
     end
 
@@ -90,23 +91,24 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::TriangleFace{P}; ato
     # 2. We will sweep this polygon. If a vertex is outside the plane,
     #    this vertex we need to see if the previous vert
 
-    pts = [tri[1], tri[2], tri[3]]
+    vv = vertices(tri)
+    pts = [vv[1], vv[2], vv[3]]
     
-    nf = numfaces(poly)
+    nf = nfacets(poly)
     
     for i in 1:nf
         face = poly[i]
         n = normal(face)
-        p0 = coordinates(face)[1]
+        p0 = vertices(face)[begin]
         pts = cut_with_plane(pts, p0, n, atol=atol)
     end
-    return TriangleFace{P}[TriangleFace(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
+    return TT[Triangle(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
 end
 
     
 
 """
-`intersectpoint(n::P, p₀::P, p₁::P, p₂::P)`
+`intersectpoint(n::V, p₀::P, p₁::P, p₂::P)`
 
 Given a plane defined by point `p₀` and the normal `n`, get
 the intersection point with the plane of the line segment
@@ -115,7 +117,7 @@ given by points `p₁` and `p₂`.
 This function assumes that there is an intersection and the segment is not
 contained in the plane.
 """
-function intersectpoint(n::P, p₀::P, p₁::P, p₂::P) where {T,P<:AbstractPoint{3,T}}
+function intersectpoint(n::Vec, p₀::Point, p₁::Point, p₂::Point)
     Δp = p₂ - p₁
     ξ = ((p₀ - p₁)⋅n) / (Δp⋅n)
     return p₁ + ξ*Δp

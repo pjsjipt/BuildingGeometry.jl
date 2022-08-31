@@ -1,7 +1,5 @@
 
-import GeometryBasics: AbstractPoint, Point, Point3
-
-export voronoi2d, voronoi3d,  VoronoiCell2d, makebbox
+export voronoi3d,  makebbox, VoronoiMesh
 export getpoint, getvertex
 
 
@@ -28,9 +26,11 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
             xmin,xmax = extrema(x)
             ymin,ymax = extrema(y)
             zmin,zmax = extrema(z)
+            
             Δ = max(xmax-xmin, ymax-ymin, zmax-zmin)  # A length for the domain
             # Let's make a big bounding box
-            (x=(xmin-nd*Δ,xmax+nd*Δ), y=(ymin-nd*Δ, ymax+nd*Δ), z=(zmin-nd*Δ, zmax+nd*Δ))
+            Box( Point(xmin-nd*Δ, ymin-nd*Δ, zmin-nd*Δ),
+                 Point(xmax+nd*Δ, ymax+nd*Δ, zmax+nd*Δ) )
         end
         
     end
@@ -40,18 +40,22 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
     at the beggining of the point list. This is done so that the
     volumes that contain the infinity point can be excluded.
     =#
-    bx1, by1, bz1 = makebbox(bbox.x, bbox.y, bbox.z)
-    xm = (bbox.x[1] + bbox.x[2])/2
-    ym = (bbox.y[1] + bbox.y[2])/2
-    zm = (bbox.z[1] + bbox.z[2])/2
-    bx2 = [bbox.x[1], bbox.x[2], xm, xm, xm, xm]
-    by2 = [ym, ym, bbox.y[1], bbox.y[2], ym, ym]
-    bz2 = [zm, zm, zm, zm, bbox.z[1], bbox.z[2]]
-    bx = [bx1; bx2]
-    by = [by1; by2]
-    bz = [bz1; bz2]
-    
-    nbb = length(bx1) + length(bx2) # Number of bounding box points
+    bx, by, bz  = let
+        (xmin,ymin,zmin), (xmax,ymax,zmax) = coordinates.(extrema(bbox))
+        bx1, by1, bz1 = makebbox((xmin,xmax),
+                                 (ymin,ymax),
+                                 (zmin,zmax))
+        
+        xm = (xmin+xmax)/2
+        ym = (ymin+ymax)/2
+        zm = (zmin+zmax)/2
+        bx2 = [xmin, xmax, xm, xm, xm, xm]
+        by2 = [ym, ym, ymin, ymax, ym, ym]
+        bz2 = [zm, zm, zm, zm, zmin, zmax]
+        [bx1; bx2], [by1; by2], [bz1; bz2]
+    end
+    nbb = length(bx)
+
     px = [bx; x]
     py = [by; y]
     pz = [bz; z]
@@ -98,7 +102,7 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
         # with respect to the points. If the normal of the polygon
         # points towards point `i` it should be reversed and for
         # point `k` the orientation is correct.
-        pface = ConvexPolygon(v[vi])
+        pface = ConvexPolygon(CircularVector(v[vi]))
         n⃗ = normal(pface)
         # Let's create a vector point pointing from `i` to any vertex
         # of the polygonal face:
@@ -122,29 +126,26 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
             push!(conn[k1], i1)
         end
     end
-
     # Setup data structure
     cells = [ConvexPolyhedron(v, iface) for iface in plst]
-
     return VoronoiMesh(p, v, cells, conn)
     
     
     
 end
 
-function voronoi3d(pts::AbstractVector{<:AbstractPoint{3}}; bbox=nothing, nd=8)
-    x = [p[1] for p in pts]
-    y = [p[2] for p in pts]
-    z = [p[3] for p in pts]
+function voronoi3d(pts::AbstractVector{<:Point{3}}; bbox=nothing, nd=8)
+    x = [p.coords[1] for p in pts]
+    y = [p.coords[2] for p in pts]
+    z = [p.coords[3] for p in pts]
     return voronoi3d(x, y, z; bbox=bbox, nd=nd)
 end
 
              
     
     
-struct VoronoiMesh{Dim,T,P<:AbstractPoint{Dim,T},
-                   VP<:AbstractVector{P},
-                   VV<:AbstractVector{P},CP,
+struct VoronoiMesh{Dim,T,VP<:AbstractVector{Point{Dim,T}},
+                   VV<:AbstractVector{Point{Dim,T}},CP,
                    VPO<:AbstractVector{CP}}
     points::VP
     vertices::VV
@@ -159,12 +160,14 @@ function Base.show(io::IO, msh::VoronoiMesh{Dim,T}) where {Dim,T}
     println(io, "   - Number of vertices: $(length(msh.vertices))")
 end
 
+vertices(v::VoronoiMesh) = v.vertices
+nvertices(v::VoronoiMesh) = length(v.vertices)
 
-getpoint(v::VoronoiMesh) = v.points
-getpoint(v::VoronoiMesh, idx) = v.points[idx]
+import Meshes.npoints
+npoints(v::VoronoiMesh) = length(points)
 
-getvertex(v::VoronoiMesh) = v.vertices
-getvertex(v::VoronoiMesh, idx) = v.vertices[idx]
+points(v::VoronoiMesh) = v.points
+
 
 Base.getindex(v::VoronoiMesh) = v.cells
 Base.getindex(v::VoronoiMesh, idx) = v.cells[idx]

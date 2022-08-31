@@ -5,7 +5,7 @@ using LinearAlgebra
 let B = BuildingGeometry
 
     p₀ = Point(0.0, 0.0, 0.0)
-    n⃗ = Point(0.0, 0.0, 1.0)
+    n⃗ = Vec(0.0, 0.0, 1.0)
     p₁ = Point(3.0, 1.0, 1.0)
     p₂ = Point(1.0, -1.0, -1.0)
 
@@ -13,7 +13,7 @@ let B = BuildingGeometry
     @test p ≈ Point(2.0, 0.0, 0.0)
 
     p₀ = Point(1.0, 1.0, 1.0)
-    n⃗ = Point(-1.0, 1.0, 0.0)
+    n⃗ = Vec(-1.0, 1.0, 0.0)
     p₁ = Point(0.5, 0.1, 0.1)
     p₂ = Point(0.5, 2.0, 0.1)
     
@@ -24,15 +24,15 @@ let B = BuildingGeometry
     # Testing `cut_with_plane`
 
     p0 = Point(0.0, 0.0, 0.0)
-    n = Point(-1.0, 0.0, 0.0)
-    pts = Point3.([(-1.0,-1.0,0.0), (1.0,-1.0,0.0), (1.0,1.0,0.0), (-1.0,1.0,0.0)])
+    n = Vec(-1.0, 0.0, 0.0)
+    pts = Point.([(-1.0,-1.0,0.0), (1.0,-1.0,0.0), (1.0,1.0,0.0), (-1.0,1.0,0.0)])
     
     out = cut_with_plane(pts, p0, n)
     @test length(out) == 4
     @test out[1] ≈ Point(0.0, -1.0, 0.0) 
     @test out[4] ≈ Point(0.0, 1.0, 0.0)
    
-    pts = Point3.([(-1.0,-1.0,0.0), (1.0,-1.0,0.0), (-1.0, 0.0, 0.0), (1.0,1.0,0.0),
+    pts = Point.([(-1.0,-1.0,0.0), (1.0,-1.0,0.0), (-1.0, 0.0, 0.0), (1.0,1.0,0.0),
                    (-1.0,1.0,0.0)])
     
     out = cut_with_plane(pts, p0, n)
@@ -44,10 +44,10 @@ let B = BuildingGeometry
 
 
     p0 = Point(0.0, 5.0, 5.0)
-    n = Point(1.0, 0.0, 0.0)
+    n = Vec(1.0, 0.0, 0.0)
 
-    pts = Point3.([(-1.0,-1.0,0.0), (1.0,-1.0,0.0), (-1.0, 0.0, 0.0), (1.0,1.0,0.0),
-                   (-1.0,1.0,0.0)])
+    pts = Point.([(-1.0,-1.0,0.0), (1.0,-1.0,0.0), (-1.0, 0.0, 0.0), (1.0,1.0,0.0),
+                  (-1.0,1.0,0.0)])
     out = cut_with_plane(pts, p0, n, false)
     @test length(out) == 7
     @test out[1] == pts[1]
@@ -69,10 +69,10 @@ let B = BuildingGeometry
     @test out[6] ≈ Point(-1.0,  1.0, 0.0)
 
     p0 = Point(0.0, 0.0, 0.0)
-    n = Point(-1.0, 0.0, 0.0)
+    n = Vec(-1.0, 0.0, 0.0)
     pts = Point3.([(0.0,-1.0,0.0), (1.0,-1.0,0.0), (1.0,1.0,0.0), (0.0,1.0,0.0)])
     out = cut_with_plane(pts, p0, n, false)
-    @test pts ≈ out
+    @test all(pts .≈ out)
 
     out = cut_with_plane(pts, p0, n, true)
     @test pts[1] == out[end]
@@ -88,17 +88,17 @@ let B = BuildingGeometry
 
 
     # Trivial case: no intersection, outside the bounding boxes
-    tri = TriangleFace(Point(10.0,0.0,0.0), Point(10.5,0.0,0.0), Point(0.0,10.5,0.0))
+    tri = Triangle(Point(10.0,0.0,0.0), Point(10.5,0.0,0.0), Point(0.0,10.5,0.0))
     ch  = chopwithpolyhedron(pp, tri)
     @test length(ch) == 0
 
     # Trivial case:  intersection, triangle inside polyhedron
-    tri = TriangleFace(Point(0.0,0.0,0.0), Point(0.5,0.0,0.0), Point(0.0,0.5,0.0))
+    tri = Triangle(Point(0.0,0.0,0.0), Point(0.5,0.0,0.0), Point(0.0,0.5,0.0))
     ch  = chopwithpolyhedron(pp, tri)
     @test length(ch) == 1
     @test ch[1] == tri
 
-    tri = TriangleFace(Point(-2.0,0.0,0.0), Point(2.0,-2.0,0.0), Point(2.0,2.0,0.0))
+    tri = Triangle(Point(-2.0,0.0,0.0), Point(2.0,-2.0,0.0), Point(2.0,2.0,0.0))
     ch  = chopwithpolyhedron(pp, tri)
     @test length(ch) == 2
     # The exact nodes are tricky.
@@ -107,15 +107,15 @@ let B = BuildingGeometry
     # I know the solution is two triangles
     ii = 0
     for (k,pt) in enumerate(pts)
-        if pt==ch[1][1]
+        if pt==vertices(ch[1])[1]
             ii = k
         end
     end
-    @test ch[1][2] ≈ pts[4]
-    @test ch[1][3] ≈ pts[1]
+    @test vertices(ch[1])[2] ≈ pts[4]
+    @test vertices(ch[1])[3] ≈ pts[1]
 
-    @test ch[2][2] ≈ pts[1]
-    @test ch[2][3] ≈ pts[2]
+    @test vertices(ch[2])[2] ≈ pts[1]
+    @test vertices(ch[2])[3] ≈ pts[2]
     
 end
 

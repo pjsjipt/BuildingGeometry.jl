@@ -1,13 +1,6 @@
 
 
-#import GeometryBasics: AbstractPoint, Point, Point2, AbstractPolygon, area, Point3, Polygon
 
-import Meshes  
-import Meshes: Point, area, centroid, normal, coordinates, Chain, vertices, Polygon
-import Meshes: Point2, Point3, nvertices, Vec, isclosed
-
-export ConvexPolygon, area, centroid, normal, coordinates, vertices, nvertices
-export poly2mesh
 
 struct ConvexPolygon{Dim,T,C<:Chain{Dim,T}} <: Polygon{Dim,T}
     contour::C
@@ -103,14 +96,15 @@ function normal(p::ConvexPolygon{3})
 end
 
     
-area(p::ConvexPolygon{3}) = hypot(normal_(p)...)
+Meshes.area(p::ConvexPolygon{3}) = hypot(normal_(p)...)
 
+Meshes.measure(p::ConvexPolygon) = area(p)
 
 """
 `centroid(p)`
 Computes the centroid of a [`ConvexPolygon`](@ref).
 """                      
-function centroid(p::ConvexPolygon{2,T}) where {T}
+function Meshes.centroid(p::ConvexPolygon{2,T}) where {T}
 
     A = normal_(p)
 
@@ -134,13 +128,12 @@ function centroid(p::ConvexPolygon{3,T}) where {T}
     
     v₀ = v[begin]
     for i = (firstindex(v)+1):(lastindex(v)-1)
-        
         centr = (v₀.coords + v[i].coords + v[i+1].coords) ./ 3
         Aᵢ = norm( (v[i]-v₀) × (v[i+1]-v₀)) / 2
         A += Aᵢ
         C += Aᵢ * centr 
     end
-    return Point{3,T}(C[1], C[2], C[3])
+    return Point{3,T}(C[1]/A, C[2]/A, C[3]/A)
     
 end
 

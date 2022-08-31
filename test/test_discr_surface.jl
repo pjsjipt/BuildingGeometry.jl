@@ -7,7 +7,7 @@ function genpoints2d(W, H, nw, nh)
     return w₁, h₁
 end
 function genpoints(x,y, p0, u, v) 
-    p = [x1*u + y1*v + p0 for x1 in x, y1 in y]
+    p = [(x1*u + y1*v) + p0 for x1 in x, y1 in y]
     return reshape(p, (length(x)*length(y),))
 end
 
@@ -37,12 +37,12 @@ function gentri(x,y, p0, u, v)
     pp = reshape(p, (nx*ny,))
     count = 1
     ntri = (nx-1)*(ny-1) * 2
-    tri = Vector{TriangleFace{Point{3,Float64}}}(undef, ntri)
+    tri = Vector{Triangle{3,Float64}}(undef, ntri)
     conn = zeros(Int, ntri, 3)
     for iy in 1:ny-1
         for ix in 1:nx-1
-            tri[count] = TriangleFace(p[ix,iy], p[ix+1,iy], p[ix+1,iy+1])
-            tri[count+1] = TriangleFace(p[ix,iy], p[ix+1,iy+1], p[ix,iy+1])
+            tri[count] = Triangle(p[ix,iy], p[ix+1,iy], p[ix+1,iy+1])
+            tri[count+1] = Triangle(p[ix,iy], p[ix+1,iy+1], p[ix,iy+1])
             conn[count,:] .= [pidx[ix,iy], pidx[ix+1,iy], pidx[ix+1,iy+1]]
             conn[count+1,:] .= [pidx[ix,iy], pidx[ix+1,iy+1], pidx[ix,iy+1]]
             count += 2
@@ -59,8 +59,8 @@ let
     H = 1.0
     At = W*H
     
-    u = Point3(1.0, 0.0, 0.0)
-    v = Point3(0.0, 1.0, 0.0)
+    u = Vec(1.0, 0.0, 0.0)
+    v = Vec(0.0, 1.0, 0.0)
     p0 = Point3(0.0, 0.0, 0.0)
     
     pxy = genpoints2d(W, H, 2, 2)
@@ -83,8 +83,8 @@ let
     H = 1.0
     At = W*H
     
-    u = Point3(1.0, 0.0, 0.0)
-    v = Point3(0.0, 1.0, 0.0)
+    u = Vec(1.0, 0.0, 0.0)
+    v = Vec(0.0, 1.0, 0.0)
     p0 = Point3(0.0, 0.0, 0.0)
     
     pxy = genpoints2d(W, H, 2, 2)
@@ -107,8 +107,8 @@ let
     H = 40.0
     At = W*H
     
-    u = Point3(1.0, 0.0, 0.0)
-    v = Point3(0.0, 0.0, 1.0)
+    u = Vec(1.0, 0.0, 0.0)
+    v = Vec(0.0, 0.0, 1.0)
     p0 = Point3(0.0, 0.0, 0.0)
     
     pxy = genpoints2d(W, H, 3, 4)
@@ -128,8 +128,8 @@ let
     H = 40.0
     At = W*H
     
-    u = Point3(1.0, 0.0, 0.0)
-    v = Point3(0.0, 0.0, 1.0)
+    u = Vec(1.0, 0.0, 0.0)
+    v = Vec(0.0, 0.0, 1.0)
     p0 = Point3(0.0, 0.0, 0.0)
     
     pxy = genpoints2d(W, H, 7, 13)
@@ -156,27 +156,27 @@ let
     pxy = genpoints2d(W, H, 7, 13)
     txy = gentripoints2d(W, H, 13, 19)
 
-    u1 = Point3(1.0, 0.0, 0.0)
-    v1 = Point3(0.0, 0.0, 1.0)
-    p1 = Point3(0.0, 0.0, 0.0)
+    u1 = Vec(1.0, 0.0, 0.0)
+    v1 = Vec(0.0, 0.0, 1.0)
+    p1 = Point(0.0, 0.0, 0.0)
     pts1 = genpoints(pxy[1], pxy[2], p1, u1, v1)
     tri1, ptri1, conn1 = gentri(txy[1], txy[2], p1, u1, v1)
 
-    u2 = Point3(0.0, 1.0, 0.0)
-    v2 = Point3(0.0, 0.0, 1.0)
+    u2 = Vec(0.0, 1.0, 0.0)
+    v2 = Vec(0.0, 0.0, 1.0)
     p2 = Point3(W, 0.0, 0.0)
     pts2 = genpoints(pxy[1], pxy[2], p2, u2, v2)
     tri2, ptri2, conn2 = gentri(txy[1], txy[2], p2, u2, v2)
     
-    u3 = Point3(-1.0, 0.0, 0.0)
-    v3 = Point3(0.0, 0.0, 1.0)
+    u3 = Vec(-1.0, 0.0, 0.0)
+    v3 = Vec(0.0, 0.0, 1.0)
     p3 = Point3(W, W, 0.0)
     pts3 = genpoints(pxy[1], pxy[2], p3, u3, v3)
     tri3, ptri3, conn3 = gentri(txy[1], txy[2], p3, u3, v3)
     
     
-    u4 = Point3(0.0, -1.0, 0.0)
-    v4 = Point3(0.0, 0.0, 1.0)
+    u4 = Vec(0.0, -1.0, 0.0)
+    v4 = Vec(0.0, 0.0, 1.0)
     p4 = Point3(0.0, W, 0.0)
     pts4 = genpoints(pxy[1], pxy[2], p4, u4, v4)
     tri4, ptri4, conn4 = gentri(txy[1], txy[2], p4, u4, v4)

@@ -1,54 +1,36 @@
 export discrsurface
 # Surface discretization
 
-function discrsurface(tri, pts::AbstractVector{Point{3,Float64}}; rtol=1e-8)
+function discrsurface(tri, pts::AbstractVector{Point{3,Float64}};
+                      rtol=1e-8, bbox=nothing, nd=8)
 
     ntri = length(tri)
-
     npts = length(pts)
 
     # First of all get the bounding box of the triangles:
-    xtmin = minimum(min(t[1][1], t[2][1], t[3][1]) for t in tri)
-    xtmax = maximum(max(t[1][1], t[2][1], t[3][1]) for t in tri)
+    bbpts = boundingbox(pts)
+    if isnothing(bbox)
+        bbtri = boundingbox(tri)
+        bbox1 = boundingbox([bbtri.min, bbtri.max, bbpts.min, bbpts.max])
+        Δ = norm(bbox1.max-bbox1.min)
+        u = Vec(Δ, Δ, Δ)
+        bbox = Box(bbox1.min - nd*u, bbox1.max + nd*u)
+    end
 
-    ytmin = minimum(min(t[1][2], t[2][2], t[3][2]) for t in tri)
-    ytmax = maximum(max(t[1][2], t[2][2], t[3][2]) for t in tri)
-
-    ztmin = minimum(min(t[1][3], t[2][3], t[3][3]) for t in tri)
-    ztmax = maximum(max(t[1][3], t[2][3], t[3][3]) for t in tri)
-
-    # Same for the points
-    xpmin = minimum(p[1] for p in pts)
-    xpmax = maximum(p[1] for p in pts)
-
-    ypmin = minimum(p[2] for p in pts)
-    ypmax = maximum(p[2] for p in pts)
-
-    zpmin = minimum(p[3] for p in pts)
-    zpmax = maximum(p[3] for p in pts)
-
-
-    xmin = min(xtmin, xpmin); ymin = min(ytmin, ypmin);
-    zmin = min(ztmin, zpmin);
+    Lref = norm(bbpts.max-bbpts.min)
     
-    xmax = max(xtmax, xpmax); ymax = min(ytmax, ypmax);
-    zmax = min(ztmax, zpmax);
-    
-    Δ = 10*max(xmax-xmin, ymax-ymin, zmax-zmin)
-    atol = rtol * Δ/20
-    bbox = (x = (xmin-Δ, xmax+Δ), y = (ymin-Δ, ymax+Δ), z = (zmin-Δ, zmax+Δ))
-
+    atol = rtol * Lref/2
 
     vor = voronoi3d(pts, bbox=bbox)
     # Chop each triangle with every polyhedron.
 
     # Each node of `pts` corresponds to a volume (polyhedron). We will
     # Get every triangle on the surface mesh and 
-    trivor = Vector{TriangleFace{Point3{Float64}}}[]
+    trivor = Vector{Triangle{3,Float64}}[]
     tidx = Vector{Int}[]
     for vol in vor.cells
         id = Int[]
-        trim = TriangleFace{Point{3,Float64}}[]
+        trim = Triangle{3,Float64}[]
         for (i,t) in enumerate(tri)
             t = tri[i]
             m = chopwithpolyhedron(vol, t, atol=atol)

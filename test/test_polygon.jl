@@ -56,6 +56,19 @@ let
     @test normal(p5) == Vec(0.0, 0.0, -1.0)
     @test centroid(p4) == Point(0.5, 0.5, 0.0)
     
-    
+
+    p6 = ConvexPolygon([(0,0,0), (1,0,0), (0,4,0), (0,0,0)])
+    @test area(p6) ≈ 2.0 
+    @test centroid(p6) == Point(1/3, 4/3, 0.0)
+
+    p7 = ConvexPolygon([(0,0,0), (1,0,0), (0,4,4), (0,0,0)])
+    @test area(p7) ≈ 2.0 * sqrt(2)
+    @test centroid(p7) ≈ Point(1/3, 4/3, 4/3)
+    @test normal(p7) ≈ Vec(0.0, -sqrt(2)/2, sqrt(2)/2)
+
+    p8 = ConvexPolygon([(0,0,0), (1,0,0), (1,4,4), (0,4,4), (0,0,0)])
+    @test area(p8) ≈ 4.0 * sqrt(2)
+    @test centroid(p8) ≈ Point(0.5, 2.0, 2.0)
+    @test normal(p8) ≈ Vec(0.0, -sqrt(2)/2, sqrt(2)/2)
     
 end

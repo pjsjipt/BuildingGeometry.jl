@@ -1,60 +1,67 @@
 
 import LinearAlgebra: ⋅,norm, ×
-
-import GeometryBasics
-import GeometryBasics: Polytope
-import GeometryBasics: TriangleFace
-
-export ConvexPolyhedron, numfaces, poly2mesh, volume, numvertices, Rect
+import CircularArrays: CircularVector
 
 
 
-struct ConvexPolyhedron{T,P<:AbstractPoint{3,T},VL<:AbstractVector{P}}
+
+struct ConvexPolyhedron{T} <: Polyhedron{3,T}
     "List of vertices"
-    vertices::VL
-    "Index of each individual vertex"
-    vlist::Vector{Int}
+    vertices::Vector{Point{3,T}}
     "Index of vertices of each face of the polyhedron"
     faces::Vector{Vector{Int}}
+    vmap::Dict{Int,Int}
 end
 
-function ConvexPolyhedron(vertices, faces)
-    vlist = Set{Int}()
+function ConvexPolyhedron(vertices::AbstractVector{Point{3,T}}, faces) where {T}
+    vmap = Dict{Int,Int}()
+    imap = Dict{Int,Int}()
     
-    nf = length(faces)
+    idx = 1
+    for face in faces
+        for i in face
+            if i ∉ keys(vmap)
+                vmap[i] = idx
+                imap[idx] = i
+                idx += 1
+            end
+        end
+    end
+    nv = length(vmap)
+    verts = Vector{Point{3,T}}(undef, nv)
+    for (k,v) in vmap
+        verts[v] = vertices[k]
+    end
+    
+    # Now recreate the map:
     ff = Vector{Int}[]
     for face in faces
         fi = Int[]
         for i in face
-            push!(vlist, i)
-            push!(fi,i)
+            push!(fi, vmap[i])
         end
         push!(ff, fi)
     end
-
-    return ConvexPolyhedron(vertices, collect(vlist), faces) 
+    
+    return ConvexPolyhedron(verts, ff, imap)
 end
 
 function Base.show(io::IO, p::ConvexPolyhedron{T}) where {T}
     
     println(io, "Polyhedron{$(string(T))}")
     println(io, "   - Number of faces: $(length(p.faces))")
-    println(io, "   - Number of vertices: $(length(p.vlist))")
+    println(io, "   - Number of vertices: $(nvertices(p))")
 end
 
+Meshes.vertices(p::ConvexPolyhedron) = p.vertices
+Meshes.nvertices(p::ConvexPolyhedron) = length(p.vertices)
 
 import Base.getindex
-Base.getindex(p::ConvexPolyhedron, i) = ConvexPolygon(p.vertices[p.faces[i]])
+Base.getindex(p::ConvexPolyhedron, i) = ConvexPolygon(CircularVector(p.vertices[p.faces[i]]))
 
-getvertex(p::ConvexPolyhedron) = p.vertices[p.vlist]
-getvertex(p::ConvexPolyhedron, i) = p.vertices[p.vlist[i]]
 
-numfaces(p::ConvexPolyhedron) = length(p.faces)
-numvertices(p::ConvexPolyhedron) = length(p.vlist)
+Meshes.nfacets(p::ConvexPolyhedron) = length(p.faces)
 
-import GeometryBasics.Rect
-
-Rect(p::ConvexPolyhedron) = Rect(p.vertices[p.vlist])
 
 """
 `pnpoly(poly::ConvexPolyhedron, p::Point)`
@@ -69,11 +76,11 @@ function pnpoly(poly::ConvexPolyhedron, p::Point)
     # point from a vertex to the point is > 0, the point is
     # outside the polyhedron
     
-    nf = numfaces(poly)
+    nf = nfacets(poly)
     for i in eachindex(poly.faces)
         pf = poly[i]
         n⃗ = normal(pf)
-        u⃗ = p - poly.vertices[poly.faces[i][begin]]
+        u⃗ = p - vertices(pf)[begin]
         if u⃗⋅n⃗ > 0
             return false
         end
@@ -82,7 +89,6 @@ function pnpoly(poly::ConvexPolyhedron, p::Point)
 end
 Base.in(p::Point, poly::ConvexPolyhedron) = pnpoly(poly, p)
 
-import GeometryBasics: volume
 """
 `volume(p::ConvexPolyhedron)`
 
@@ -90,27 +96,29 @@ Computes the volume of a convex polyhedron.
 
 The approach used is to find a point a inside and sum 
 """
-function volume(p::ConvexPolyhedron{T}) where {T}
+function Meshes.volume(p::ConvexPolyhedron{T}) where {T}
 
     # Let's choose a point: any vertex.
-    pt = p.vertices[p.vlist[begin]]
+    pt = p.vertices[begin]
     vol = zero(T)
     for i in eachindex(p.faces)
         # Get normal and area of each face!
         face = p[i] # Convex polygon
-        nrm = normal(face)
+        nrm = normal_(face)
         A = norm(nrm)
         n⃗ = nrm ./ A
-
+        
         # Measure the distance from point pt to the plane of the face.
         # This should be a negative number (outward normal...)
-        h = (pt - face.contour[begin]) ⋅ n⃗
+        h = (pt - vertices(face)[begin]) ⋅ n⃗
         vol -= A*h/3
     end
 
     return vol
                    
 end
+
+measure(p::ConvexPolyhedron) = volume(p)
 
 """
 `centroid(p::ConvexPolyhedron)`
@@ -123,8 +131,9 @@ function centroid(p::ConvexPolyhedron{T}) where {T}
     # that go from each face and converges to the selected point.
     # # Then we will simply add the contribution of each pyramid.
     # Let's choose a point: any vertex.
-    xp, yp, zp = pt = p.vertices[p.vlist[begin]]
-
+    pt = p.vertices[begin]
+    xp, yp, zp = coordinates(pt)
+    
     xc = zero(T)
     yc = zero(T)
     zc = zero(T)
@@ -133,14 +142,14 @@ function centroid(p::ConvexPolyhedron{T}) where {T}
     for i in eachindex(p.faces)
         # Get normal and area of each face!
         face = p[i] # Convex polygon
-        x0,y0,z0 = centroid(face)
-        nrm = normal(face)
+        x0,y0,z0 = coordinates(centroid(face))
+        nrm = normal_(face)
         A = norm(nrm)
         n⃗ = nrm ./ A
 
         # Measure the distance from point pt to the plane of the face.
         # This should be a negative number (outward normal...)
-        h = (pt - face.contour[begin]) ⋅ n⃗
+        h = (pt - face.contour.vertices[begin]) ⋅ n⃗
 
         V = A*h / 3 # Volume of the pyramid
         xc += V * ( x0 + (xp-x0)/4 )
@@ -154,52 +163,7 @@ function centroid(p::ConvexPolyhedron{T}) where {T}
     
 end
 
-import Base.extrema
-function extrema(p::ConvexPolyhedron)
-    nv = length(p.vlist)
-    iv = p.vlist
-    v = p.vertices
-    p1 = v[iv[begin]]
 
-    xmax = xmin = p1[1]
-    ymax = ymin = p1[2]
-    zmax = zmin = p1[3]
-
-    for i in iv
-        x,y,z = v[i]
-        if x > xmax
-            xmax = x
-        elseif x < xmin
-            xmin = x
-        end
-        if y > ymax
-            ymax = y
-        elseif y < ymin
-            ymin = y
-        end
-        if z > zmax
-            zmax = z
-        elseif z < zmin
-            zmin = z
-        end
-        
-    end
-    return Point3(xmin, ymin, zmin), Point3(xmax, ymax, zmax)
-end
-
-function extrema(p::TriangleFace)
-
-    xmin = min(p[1][1], p[2][1], p[3][1])
-    xmax = max(p[1][1], p[2][1], p[3][1])
-    ymin = min(p[1][2], p[2][2], p[3][2])
-    ymax = max(p[1][2], p[2][2], p[3][2])
-    zmin = min(p[1][3], p[2][3], p[3][3])
-    zmax = max(p[1][3], p[2][3], p[3][3])
-    return Point3(xmin, ymin, zmin), Point3(xmax, ymax, zmax)
-end
-    
-normal(tri::TriangleFace) = (tri[3]-tri[1]) × (tri[2]-tri[1]) ./ 2
-area(tri::TriangleFace) = norm(normal(tri))
 
 
 """
