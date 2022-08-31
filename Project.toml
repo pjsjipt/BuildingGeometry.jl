@@ -4,7 +4,6 @@ authors = ["Paulo Jabardo <pjabardo@ipt.br>"]
 version = "0.1.0"
 
 [deps]
-GeneralPolygonClipper = "1ef9aace-6893-4b14-abcd-6e0cb8bf6495"
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"

@@ -2,7 +2,6 @@
 
 import GeometryBasics: AbstractPoint, Point, Point2, AbstractPolygon, area, Point3, Polygon
 
-import GeneralPolygonClipper as gpc
   
 
 
@@ -147,46 +146,3 @@ function poly2mesh(poly::ConvexPolygon)
 end
 
 
-
-import GeneralPolygonClipper: Vertex
-import Base.union
-
-"""
-`gpc_operations(op::GPCOperation, p1, p2)`
-Performs boolean operations on 2D polygons. First the polygons
-are converted to [`GPCPolygon`](@ref). Then, performs the boolean
-operation specified by parameter `op` (see enum [`GPCOperation`](@ref)).
-Finally, convert the results to [`ConvexPolygon`](@ref). There can be 
-more than one resulting polygon depending on the exact nature of `p1`, `p2`
-and `op`.
-"""
-function gpc_operations(op::gpc.GPCOperation, p1::ConvexPolygon{2,Float64},
-                        p2::ConvexPolygon{2,Float64})
-
-    gpc1 = gpc.GPCPolygon([false], [Vertex(p[1], p[2]) for p in coordinates(p1)])
-    gpc2 = gpc.GPCPolygon([false], [Vertex(p[1], p[2]) for p in coordinates(p2)])
-
-    gpcout = gpc.gpc_polygon_clip(op, gpc1, gpc2)
-
-    # If both polygons were convex, the output would be a single polygon
-    # In other cases there can be more than one output polygon.
-
-    return ConvexPolygon.([[Point2{Float64}(v.x, v.y) for v in g] for g in gpcout.contours])
-    
-end
-
-import Base.union
-union(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
-    gpc_operations(gpc.GPC_UNION, p1, p2)
-import Base.intersect
-intersect(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
-    gpc_operations(gpc.GPC_INT, p1, p2)
-import Base.(-)
-(-)(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
-    gpc_operations(gpc.GPC_DIFF, p1, p2)
-
-import Base.xor
-xor(p1::ConvexPolygon{2,Float64}, p2::ConvexPolygon{2,Float64}) =
-    gpc_operations(gpc.GPC_XOR, p1, p2)
-
-#simple2poly(p::SimplePolygon{2,Float64}) = Polygon(coordinates(p))
