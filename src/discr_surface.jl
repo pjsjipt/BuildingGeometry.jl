@@ -1,7 +1,7 @@
 export discrsurface
 # Surface discretization
 
-function discrsurface(tri, pts::AbstractVector{Point{3,Float64}})
+function discrsurface(tri, pts::AbstractVector{Point{3,Float64}}; rtol=1e-8)
 
     ntri = length(tri)
 
@@ -35,6 +35,7 @@ function discrsurface(tri, pts::AbstractVector{Point{3,Float64}})
     zmax = min(ztmax, zpmax);
     
     Δ = 10*max(xmax-xmin, ymax-ymin, zmax-zmin)
+    atol = rtol * Δ/20
     bbox = (x = (xmin-Δ, xmax+Δ), y = (ymin-Δ, ymax+Δ), z = (zmin-Δ, zmax+Δ))
 
 
@@ -48,9 +49,9 @@ function discrsurface(tri, pts::AbstractVector{Point{3,Float64}})
     for vol in vor.cells
         id = Int[]
         trim = TriangleFace{Point{3,Float64}}[]
-        for i in 1:ntri
+        for (i,t) in enumerate(tri)
             t = tri[i]
-            m = chopwithpolyhedron(vol, t)
+            m = chopwithpolyhedron(vol, t, atol=atol)
             nm = length(m)
             if nm > 0
                 for ti in m

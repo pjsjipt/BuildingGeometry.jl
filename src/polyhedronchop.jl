@@ -3,16 +3,20 @@
 
 export cut_with_plane, chopwithpolyhedron
 
-function cut_with_plane(pts::Vector{P}, p0, n, circ=true) where{T,P<:AbstractPoint{T}}
+function cut_with_plane(pts::Vector{P}, p0, n, circ=true; atol=1e-8) where{T,P<:AbstractPoint{T}}
+
     
     npts = length(pts)
     out = P[]
     if length(pts) < 1
         return out
     end
-    
+    zz = zero(T)
     p1 = pts[begin]
     slast = (p1 - p0) ⋅ n
+    if isapprox(slast, zz, atol=atol)
+        slast = zz
+    end
     if slast <= 0
         # The first point is inside the plane. Point should be conserved!
         if !circ
@@ -25,10 +29,14 @@ function cut_with_plane(pts::Vector{P}, p0, n, circ=true) where{T,P<:AbstractPoi
     else
         idx = collect(2:npts)
     end
-
+ 
     for i in idx
         p2 = pts[i]
         snew = (p2 - p0) ⋅ n
+        if isapprox(snew, zz, atol=atol)
+            snew = zz
+        end
+       
         if snew == 0.0
             push!(out, p2)
         elseif snew * slast  < 0
@@ -47,7 +55,7 @@ function cut_with_plane(pts::Vector{P}, p0, n, circ=true) where{T,P<:AbstractPoi
 end
 
 
-function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::TriangleFace{P}) where {T,P<:AbstractPoint{3,T}}
+function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::TriangleFace{P}; atol=1e-8) where {T,P<:AbstractPoint{3,T}}
 
     # First we will check if there is any chance of intersection
     let
@@ -90,7 +98,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::TriangleFace{P}) whe
         face = poly[i]
         n = normal(face)
         p0 = coordinates(face)[1]
-        pts = cut_with_plane(pts, p0, n)
+        pts = cut_with_plane(pts, p0, n, atol=atol)
     end
     return TriangleFace{P}[TriangleFace(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
 end
