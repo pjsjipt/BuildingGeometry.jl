@@ -190,6 +190,54 @@ let
     A = [sum(area.(t)) for t in xtri]
     @test sum(A) ≈ At
     @test all(A .≈ Ai)
+
+    # Now we will test the slicind stuff
+    z = range(0.0, H, length=18)
+    trilst, triidx = slicemesh(tri, z)
+
+    A = [sum(area.(t)) for t in trilst]
+    @test sum(A) ≈ At
+    @test all(A .≈ z[2]*4*W)
     
+
+
+    tri = [Triangle((0,0,0), (1,0,0), (1,0,1)), Triangle((0,0,0),(1,0,1),(0,0,1))]
+    xt, xi = slicemesh(tri, [0.0, 0.5, 1.0])
+    A = [sum(area.(t)) for t in xt]
+
+    @test sum(A) ≈ 1.0
+    @test all(A .≈ 0.5)
+
+    z = range(0.0, 1.0, length=6)
+    xt, xi = slicemesh(tri, z)
+    A = [sum(area.(t)) for t in xt]
+    @test sum(A) ≈ 1.0
+    @test all(A .≈ 0.2)
+    
+    
+    z = range(0.0, 1.0, length=3)
+    txy = gentripoints2d(1.0, 1.0, 2, 4)
+    u = Vec(1.0, 0.0, 0.0)
+    v = Vec(0.0, 0.0, 1.0)
+    p0 = Point3(0.0, 0.0, 0.0)
+    tri, ptri, conn = gentri(txy[1], txy[2], p0, u, v)
+    trilst, triidx = slicemesh(tri, z)
+
+    A = [sum(area.(t)) for t in trilst]
+    @test sum(A) ≈ 1.0
+    @test all(A .≈ z[2])
+
+
+    z = range(0.0, 1.0, length=4)
+    txy = gentripoints2d(1.0, 1.0, 2, 4)
+    u = Vec(1.0, 0.0, 0.0)
+    v = Vec(0.0, 0.0, 1.0)
+    p0 = Point3(0.0, 0.0, 0.0)
+    tri, ptri, conn = gentri(txy[1], txy[2], p0, u, v)
+    trilst, triidx = slicemesh(tri, z)
+
+    A = [sum(area.(t)) for t in trilst]
+    @test sum(A) ≈ 1.0
+    @test all(A .≈ z[2])
 
 end

@@ -2,7 +2,8 @@
 
 
 
-function cut_with_plane(pts::Vector{Point{3,T}}, p0, n, circ=true; atol=1e-8) where{T}
+function cut_with_plane(pts::AbstractVector{Point{3,T}},
+                        p0, n, circ=true; atol=1e-8) where{T}
 
     
     npts = length(pts)
