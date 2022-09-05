@@ -18,7 +18,7 @@ import Meshes: boundingbox
 export ConvexPolygon, area, centroid, normal, coordinates, vertices, nvertices
 export poly2mesh, measure, volume, nfacets, boundingbox
 export ConvexPolyhedron
-export cut_with_plane, chopwithpolyhedron, slicemesh
+export cut_with_plane, chopwithpolyhedron, slicemesh, intersectmesh!
 
 
 include("polygons.jl")
@@ -26,5 +26,6 @@ include("polyhedron.jl")
 include("voronoi3d.jl")
 include("chopmesh.jl")
 include("discr_surface.jl")
-
+include("node_info.jl")
+include("intersect_mesh.jl")
 end

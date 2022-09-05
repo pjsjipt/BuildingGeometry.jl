@@ -23,6 +23,7 @@ function discrsurface(tri, idx::AbstractVector{Int},
     atol = rtol * Lref/2
 
     vor = voronoi3d(pts, bbox=bbox)
+    return vor
     # Chop each triangle with every polyhedron.
 
     # Each node of `pts` corresponds to a volume (polyhedron). We will
