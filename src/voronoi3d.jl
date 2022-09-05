@@ -128,7 +128,30 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
     end
     # Setup data structure
     cells = [ConvexPolyhedron(v, iface) for iface in plst]
-    return VoronoiMesh(p, v, cells, conn)
+
+    # Build Vertex connectivity:
+    nverts = length(v)
+    vconn = [Int[] for i in 1:nverts]
+    vpconn = [Int[] for i in 1:nverts]
+    for (i, f) in enumerate(plst)
+        # i is the point. f is a vector with vertices
+        nf = length(f)
+        for k in 1:nf
+            vk = f[k]
+            for j in k+1:nf
+                vj = f[k]
+                if vj ∉ vconn[vk]  # We have already considered this pair
+                    push!(vconn[vk], vj)
+                    push!(vconn[vj], vk)
+                end
+            end
+            if i ∉ vpconn[vk]
+                push!(vpconn, i)
+            end
+        end
+    end
+    
+    return VoronoiMesh(p, v, cells, conn, vconn, vpconn)
     
     
     
@@ -147,10 +170,18 @@ end
 struct VoronoiMesh{Dim,T,VP<:AbstractVector{Point{Dim,T}},
                    VV<:AbstractVector{Point{Dim,T}},CP,
                    VPO<:AbstractVector{CP}}
+    "Points used to calculate the Voronoi diagram"
     points::VP
+    "Vertices of the Voronoi diagram"
     vertices::VV
+    "Individual cells of the Voronoi diagram"
     cells::VPO
+    "Point connectivity"
     conn::Vector{Vector{Int}}
+    "Vertex connectivity"
+    vconn::Vector{Vector{Int}}
+    "Vertex point connectivity"
+    vpconn::Vector{Vector{Int}}
 end
 
 function Base.show(io::IO, msh::VoronoiMesh{Dim,T}) where {Dim,T}
