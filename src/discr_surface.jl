@@ -1,7 +1,8 @@
 export discrsurface
 # Surface discretization
 
-function discrsurface(tri, pts::AbstractVector{Point{3,Float64}};
+function discrsurface(tri, idx::AbstractVector{Int},
+                      pts::AbstractVector{Point{3,Float64}};
                       rtol=1e-8, bbox=nothing, nd=8)
 
     ntri = length(tri)
@@ -31,7 +32,7 @@ function discrsurface(tri, pts::AbstractVector{Point{3,Float64}};
     for vol in vor.cells
         id = Int[]
         trim = Triangle{3,Float64}[]
-        for (i,t) in enumerate(tri)
+        for i in idx
             t = tri[i]
             m = chopwithpolyhedron(vol, t, atol=atol)
             nm = length(m)
@@ -50,6 +51,11 @@ function discrsurface(tri, pts::AbstractVector{Point{3,Float64}};
 
     return trivor, tidx
 end
+
+discrsurface(tri, pts::AbstractVector{Point{3,Float64}};
+             rtol=1e-8, bbox=nothing, nd=8) = discrsurface(tri, 1:length(tri),pts;
+                                                           rtol=rtol, bbox=bbox,nd=nd)
+
 
 
 """

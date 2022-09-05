@@ -135,18 +135,22 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
     vpconn = [Int[] for i in 1:nverts]
     for (i, f) in enumerate(plst)
         # i is the point. f is a vector with vertices
-        nf = length(f)
-        for k in 1:nf
-            vk = f[k]
-            for j in k+1:nf
-                vj = f[k]
-                if vj ∉ vconn[vk]  # We have already considered this pair
-                    push!(vconn[vk], vj)
-                    push!(vconn[vj], vk)
+        for fi in f
+            nf = length(fi)
+            for k in 1:nf
+                vk = fi[k]
+                for j in k+1:nf
+                    vj = fi[k]
+                    if vj ∉ vconn[vk]  # We have already considered this pair
+                        push!(vconn[vk], vj)
+                    end
+                    if vk ∉ vconn[vj]
+                        push!(vconn[vj], vk)
+                    end
                 end
-            end
-            if i ∉ vpconn[vk]
-                push!(vpconn, i)
+                if i ∉ vpconn[vk]
+                    push!(vpconn[vk], i)
+                end
             end
         end
     end
