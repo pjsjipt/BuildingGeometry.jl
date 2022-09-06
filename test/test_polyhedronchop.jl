@@ -96,7 +96,7 @@ let B = BuildingGeometry
     tri = Triangle(Point(0.0,0.0,0.0), Point(0.5,0.0,0.0), Point(0.0,0.5,0.0))
     ch  = chopwithpolyhedron(pp, tri)
     @test length(ch) == 1
-    @test ch[1] == tri
+    @test vertices(ch[1]) == vertices(tri)
 
     tri = Triangle(Point(-2.0,0.0,0.0), Point(2.0,-2.0,0.0), Point(2.0,2.0,0.0))
     ch  = chopwithpolyhedron(pp, tri)

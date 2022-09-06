@@ -78,8 +78,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
         end
         
         if nvin == 3 # The triangle is completely inside the polyhedron
-            return TT[]
-            #return TT[Triangle(vertioces(tri)...)]
+            return TT[Triangle(vertices(tri)...)]
         end
     end
     # Here is the tricky part.

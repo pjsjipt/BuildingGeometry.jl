@@ -44,7 +44,7 @@ function intersectmesh!(msh::AbstractVector{Tri},
             te = emsh[ie]
             for ii in eachindex(itri)
                 i = itri[ii]
-                if i != kk
+                if i != k
                     continue
                 end
                 ti = imsh[ii]
