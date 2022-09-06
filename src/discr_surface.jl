@@ -5,6 +5,8 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
                       pts::AbstractVector{Point{3,Float64}};
                       rtol=1e-8, bbox=nothing, nd=8)
 
+    TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
+    
     ntri = length(tri)
     npts = length(pts)
 
@@ -24,14 +26,13 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
 
     vor = voronoi3d(pts, bbox=bbox)
     # Chop each triangle with every polyhedron.
-
     # Each node of `pts` corresponds to a volume (polyhedron). We will
     # Get every triangle on the surface mesh and 
-    trivor = Vector{Triangle{3,Float64}}[]
+    trivor = Vector{TriFace}[]
     tidx = Vector{Int}[]
     for vol in vor.cells
         id = Int[]
-        trim = Triangle{3,Float64}[]
+        trim = TriFace[]
         for i in idx
             t = tri[i]
             m = chopwithpolyhedron(vol, t, atol=atol)

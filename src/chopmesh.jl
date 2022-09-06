@@ -1,5 +1,5 @@
 # Choping triangles with Convex polyhedrons
-
+import StaticArrays: SVector
 
 
 function cut_with_plane(pts::AbstractVector{Point{3,T}},
@@ -59,7 +59,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
                             atol=1e-8) where {T}
     
     # First we will check if there is any chance of intersection
-    TT = typeof(tri)
+    TT = Triangle{3,T,SVector{3,Point{3,T}}}
     let
         pmin,pmax = coordinates.(extrema(boundingbox(poly)))
         tmin,tmax = coordinates.(extrema(boundingbox(tri)))
@@ -78,10 +78,10 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
         end
         
         if nvin == 3 # The triangle is completely inside the polyhedron
-            return [tri]
+            return TT[]
+            #return TT[Triangle(vertioces(tri)...)]
         end
     end
-
     # Here is the tricky part.
     # Each face of the *convex* polyhedron is part of a plane that divides the
     # entire space into two parts. Outside and inside. Points that are insider
@@ -94,7 +94,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
 
     vv = vertices(tri)
     pts = [vv[1], vv[2], vv[3]]
-    
+
     nf = nfacets(poly)
     
     for i in 1:nf
@@ -103,7 +103,12 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
         p0 = vertices(face)[begin]
         pts = cut_with_plane(pts, p0, n, atol=atol)
     end
-    return TT[Triangle(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
+    if length(pts) > 2
+        return TT[Triangle(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
+    else
+        return TT[]
+    end
+    
 end
 
     
