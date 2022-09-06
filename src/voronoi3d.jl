@@ -154,10 +154,8 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
             end
         end
     end
-    
+
     return VoronoiMesh(p, v, cells, conn, vconn, vpconn)
-    
-    
     
 end
 

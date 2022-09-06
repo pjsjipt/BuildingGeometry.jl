@@ -1,7 +1,7 @@
 export discrsurface
 # Surface discretization
 
-function discrsurface(tri, idx::AbstractVector{Int},
+function discrsurface(tri, idx::AbstractVector{<:Integer},
                       pts::AbstractVector{Point{3,Float64}};
                       rtol=1e-8, bbox=nothing, nd=8)
 
@@ -23,7 +23,6 @@ function discrsurface(tri, idx::AbstractVector{Int},
     atol = rtol * Lref/2
 
     vor = voronoi3d(pts, bbox=bbox)
-    return vor
     # Chop each triangle with every polyhedron.
 
     # Each node of `pts` corresponds to a volume (polyhedron). We will
@@ -54,7 +53,7 @@ function discrsurface(tri, idx::AbstractVector{Int},
 end
 
 discrsurface(tri, pts::AbstractVector{Point{3,Float64}};
-             rtol=1e-8, bbox=nothing, nd=8) = discrsurface(tri, 1:length(tri),pts;
+             rtol=1e-8, bbox=nothing, nd=8) = discrsurface(tri, 1:length(tri), pts;
                                                            rtol=rtol, bbox=bbox,nd=nd)
 
 
