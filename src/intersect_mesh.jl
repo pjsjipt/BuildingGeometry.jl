@@ -69,26 +69,6 @@ function intersectmesh!(msh::AbstractVector{Tri},
 end
 
 
-function intersectmesh!(msh::AbstractVector{Triangle{3,T}},
-                        nodes::AbstractVector{NodeInfo{3,T,Tex,Tin,Int}},
-                        tri::AbstractVector{Triangle{3,T}},
-                        eidlst::AbstractVector{Tex}, eidx, etri,
-                        iidlst::AbstractVector{Tin}, iidx, itri;
-                        rtol=1e-8) where {T,Tex,Tin}
-    
-    #msh = Vector{Triangle{3,T}}[]
-    #nodes = Vector{NodeInfo{3,T,Tex,Tin,Int}}[]
-    for (e,eid) in enumerate(eidlst)
-        emsh = view(tri, eidx[e])
-        for (i,iid) in enumerate(iidlst)
-            imsh = view(tri, iidx[i])
-            intersectmesh!(msh, nodes, eid, emsh, etri[e],
-                           iid, imsh, itri[i]; rtol=rtol)
-        end
-    end
-    return
-end
-
 function intersect_tri(tri1, tri2; rtol=1e-8)
     v1 = vertices(tri1)
     v2 = vertices(tri2)
