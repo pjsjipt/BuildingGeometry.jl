@@ -20,6 +20,7 @@ export poly2mesh, measure, volume, nfacets, boundingbox
 export ConvexPolyhedron
 export cut_with_plane, chopwithpolyhedron, slicemesh, intersectmesh!, intersect_tri
 export NodeInfo, BuildingSurface, buildsurface, buildingslice, mergemeshes
+export readraw
 
 include("polygons.jl")
 include("polyhedron.jl")
@@ -29,5 +30,6 @@ include("discr_surface.jl")
 include("node_info.jl")
 include("intersect_mesh.jl")
 include("building_surface.jl")
+include("raw.jl")
 
 end
