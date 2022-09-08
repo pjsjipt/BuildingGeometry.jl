@@ -4,6 +4,7 @@ import Meshes: connect, SimpleMesh
 
 struct BuildingSurface{T,Tex,Tin,TMesh}
     tri::Vector{Triangle{3,T,SVector{3,Point{3,T}}}}
+    points::Vector{Point{3,T}}
     nodes::Vector{NodeInfo{3,T,Tex,Tin,Int}}
     mesh::TMesh
 end
@@ -89,11 +90,13 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
             
         end
     end
-    
+
+    coords = centroid.(msh)
     # Lets get the vertices
     ntri = length(msh)
     verts = fill(Point{3,Float64}(0,0,0), ntri * 3)
     conn = fill((0,0,0), ntri)
+    
     for i in 1:ntri
         k = (i-1)*3 + 1
         vtri = vertices(msh[i])
@@ -104,7 +107,7 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
     end
     mesh = SimpleMesh(verts, connect.(conn, Triangle))
     
-    return BuildingSurface(msh, nodes, mesh)
+    return BuildingSurface(msh, coords, nodes, mesh)
     
 end
 
