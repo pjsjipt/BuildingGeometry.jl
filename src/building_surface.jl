@@ -93,23 +93,65 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
     end
 
     coords = centroid.(msh)
-    # Lets get the vertices
-    ntri = length(msh)
-    verts = fill(Point{3,Float64}(0,0,0), ntri * 3)
-    conn = fill((0,0,0), ntri)
-    
-    for i in 1:ntri
-        k = (i-1)*3 + 1
-        vtri = vertices(msh[i])
-        verts[k] = vtri[1]
-        verts[k+1] = vtri[2]
-        verts[k+2] = vtri[3]
-        conn[i] = (k,k+1,k+2)
-    end
-    mesh = SimpleMesh(verts, connect.(conn, Triangle))
-    
+
+    # Let's build a mesh
+    mesh = tri2mesh(msh)
+
     return BuildingSurface(msh, coords, nodes, mesh)
     
 end
 
 
+function tri2mesh(tri::AbstractVector{<:Triangle{Dim,T}}) where {Dim,T}
+    ntri = length(tri)
+    verts = fill(Point{Dim,T}(0,0,0), ntri*3)
+    conn = fill((0,0,0), ntri)
+    for i in 1:ntri
+        k = (i-1)*3 + 1
+        vtri = vertices(tri[i])
+        verts[k] = vtri[1]
+        verts[k+1] = vtri[2]
+        verts[k+2] = vtri[3]
+        conn[i] = (k,k+1,k+2)
+    end
+    return SimpleMesh(verts, connect.(conn, Triangle))
+end
+
+
+function floor_mesh(tri, idx, msh)
+    A = [area(t) .* normal(t) for t in tri]
+    coords = centroid.(tri)
+    iex = [n.iex for n in msh.nodes[idx]]
+    iin = [n.iin for n in msh.nodes[idx]]
+    itri = [n.tri for n in msh.nodes[idx]]
+    nodes = [NodeInfo(A[i], iex[i], iin[i], itri[i], coords[i]) for i in eachindex(A)]
+    mesh = tri2mesh(tri)
+
+    return BuildingSurface(tri, coords, nodes, mesh)
+    
+end
+
+
+function buildingslice(msh::BuildingSurface{T},
+                    p::AbstractVector{Point{3,T}}; rtol=1e-8) where {T}
+    trilst, triidx = slicemesh(msh.tri, p; rtol=rtol)
+    
+    return [floor_mesh(trilst[i], triidx[i], msh) for i in eachindex(trilst)]
+end
+
+
+function buildingslice(msh::BuildingSurface{T}, z::AbstractVector{T};
+                       x=0, y=0, rtol=1e-8) where {T}
+    
+    trilst, triidx = slicemesh(msh.tri, z; x=x, y=y, rtol=rtol)
+    return [floor_mesh(trilst[i], triidx[i], msh) for i in eachindex(trilst)]
+end
+
+    
+function buildingslice(msh::BuildingSurface{T}, nslices::Integer,
+                   pa::Point{3,T}, pb::Point{3,T};  rtol=1e-8) where {T}
+
+    trilst, triidx = slicemesh(msh.tri, pa, pb; rtol=rtol)
+    
+    return [floor_mesh(trilst[i], triidx[i], msh) for i in eachindex(trilst)]
+end

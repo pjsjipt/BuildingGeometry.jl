@@ -78,12 +78,13 @@ account. There is a method for slicing `nslices` from `pa` to `pb`.
 """
 function slicemesh(m::AbstractVector{P},
                    p::AbstractVector{Point{3,T}}; rtol=1e-8) where {P,T}
-    mshlst = Vector{Triangle{3,T}}[]
+    TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
+    mshlst = Vector{TriFace}[]
     mshidx = Vector{Int}[]
     # We will analyze each slice
     for i in firstindex(p)+1:lastindex(p)
         idx = Int[] # Id's of each geometry
-        mshi = Triangle{3,T}[] # We will decompose this into triangles
+        mshi = TriFace[] # We will decompose this into triangles
         p₁ = p[i-1]
         p₂ = p[i]
         L = norm(p₂-p₁)
@@ -104,7 +105,7 @@ function slicemesh(m::AbstractVector{P},
             # Generate triangles:
             npts = length(pts)
             for i in 2:npts-1
-                push!(mshi, Triangle(pts[1], pts[i], pts[i+1]))
+                push!(mshi, TriFace(pts[1], pts[i], pts[i+1]))
                 push!(idx, k)
             end
         end
