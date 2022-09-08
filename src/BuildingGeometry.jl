@@ -19,7 +19,7 @@ export ConvexPolygon, area, centroid, normal, coordinates, vertices, nvertices
 export poly2mesh, measure, volume, nfacets, boundingbox
 export ConvexPolyhedron
 export cut_with_plane, chopwithpolyhedron, slicemesh, intersectmesh!, intersect_tri
-export NodeInfo, BuildingSurface, buildsurface, buildingslice
+export NodeInfo, BuildingSurface, buildsurface, buildingslice, mergemeshes
 
 include("polygons.jl")
 include("polyhedron.jl")
