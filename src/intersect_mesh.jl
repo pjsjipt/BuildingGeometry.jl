@@ -54,8 +54,9 @@ function intersectmesh!(msh::AbstractVector{Tri},
                 if length(pts) > 2
                     for l in firstindex(pts)+1:lastindex(pts)-1
                         new_tri = Triangle(pts[begin], pts[l], pts[l+1])
+                        tp = centroid(new_tri)
                         An = area(new_tri) .* normal(new_tri)
-                        nn = NodeInfo(An, eid, iid, k)
+                        nn = NodeInfo(An, eid, iid, k, tp)
                         push!(msh, new_tri)
                         push!(nodes, nn)
                     end

@@ -22,6 +22,8 @@ struct NodeInfo{Dim,T,Tex,Tin,TRI}
     iin::Tin
     "Triangle/mesh"
     tri::TRI
+    "Coordinates of the node"
+    point::Point{Dim,T}
 end
 
 
