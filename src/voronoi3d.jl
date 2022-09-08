@@ -18,7 +18,7 @@ function makebbox(ranges...) where {T}
     
 end
 
-function voronoi3d(x,y,z; bbox=nothing, nd=8)
+function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
     length(x) == length(y) == length(z) || error("Vectors x, y and z should have the same length")
     
     if isnothing(bbox)
@@ -52,7 +52,12 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
         bx2 = [xmin, xmax, xm, xm, xm, xm]
         by2 = [ym, ym, ymin, ymax, ym, ym]
         bz2 = [zm, zm, zm, zm, zmin, zmax]
-        [bx1; bx2], [by1; by2], [bz1; bz2]
+        if !isnothing(auxpts)
+            [bx1; bx2; auxpts.x], [by1; by2; auxpts.y], [bz1; bz2; auxpts.z]
+        else
+            [bx1; bx2], [by1; by2], [bz1; bz2]
+        end
+
     end
     nbb = length(bx)
 
@@ -159,11 +164,19 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8)
     
 end
 
-function voronoi3d(pts::AbstractVector{<:Point{3}}; bbox=nothing, nd=8)
+function voronoi3d(pts::AbstractVector{<:Point{3}}; bbox=nothing, nd=8, auxpts=nothing)
     x = [p.coords[1] for p in pts]
     y = [p.coords[2] for p in pts]
     z = [p.coords[3] for p in pts]
-    return voronoi3d(x, y, z; bbox=bbox, nd=nd)
+
+    if !isnothing(auxpts)
+        xa = [p.coords[1] for p in auxpts]
+        ya = [p.coords[2] for p in auxpts]
+        za = [p.coords[3] for p in auxpts]
+        auxpts = (x=xa, y=ya, z=za)
+    end
+    
+    return voronoi3d(x, y, z; bbox=bbox, nd=nd, auxpts=auxpts)
 end
 
              
