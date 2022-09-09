@@ -157,12 +157,11 @@ function buildingslice(msh::BuildingSurface{T}, nslices::Integer,
 end
 
 
-function mergemeshes(mshlst::AbstractVector{BuildingSurface{T}}) where {T}
-
+function mergemeshes(mshlst::AbstractVector{<:BuildingSurface{T}}) where {T}
     tri = copy(mshlst[begin].tri)
     points = copy(mshlst[begin].points)
     nodes = copy(mshlst[begin].nodes)
-    for msh in mshlst[begin+1,end]
+    for msh in mshlst[begin+1:end]
         append!(tri, msh.tri)
         append!(points, msh.points)
         append!(nodes, msh.nodes)
@@ -174,5 +173,5 @@ function mergemeshes(mshlst::AbstractVector{BuildingSurface{T}}) where {T}
     
 end
 
-mergemeshes(mshlst...) = mergemeshes(collect(mshlst))
+#mergemeshes(mshlst...) = mergemeshes(collect(mshlst))
 
