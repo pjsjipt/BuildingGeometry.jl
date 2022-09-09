@@ -25,6 +25,7 @@ function readraw(fname)
                                    Point(vals[7], vals[8], vals[9])))
             end
         end
+        push!(mshlst, msh)
     end
     return mshlst
 
