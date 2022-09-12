@@ -22,7 +22,7 @@ export cut_with_plane, chopwithpolyhedron, slicemesh, intersectmesh!, intersect_
 export NodeInfo, nodearea, nodepoint, nodeside
 export BuildingSurface, buildsurface, buildingslice, mergemeshes
 export readraw,tri2mesh
-export addforcecontrib!
+export addforcecontrib!, forcematrix
 
 include("polygons.jl")
 include("polyhedron.jl")
