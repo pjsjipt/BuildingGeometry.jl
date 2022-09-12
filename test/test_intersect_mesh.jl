@@ -115,7 +115,7 @@ let
     TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
 
     msh = TriFace[]
-    nodes = NodeInfo{3,Float64,Int,Int,Int}[]
+    nodes = NodeInfo{3,Float64,Int,Int}[]
 
     Ne = length(pts)
     Ni = length(ptsi)
@@ -160,7 +160,7 @@ let
     TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
 
     msh = TriFace[]
-    nodes = NodeInfo{3,Float64,Int,Int,Int}[]
+    nodes = NodeInfo{3,Float64,Int,Int}[]
 
     Ne = length(epts)
     Ni = length(ipts)

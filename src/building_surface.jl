@@ -5,7 +5,7 @@ import Meshes: connect, SimpleMesh
 struct BuildingSurface{T,Tex,Tin}
     tri::Vector{Triangle{3,T,SVector{3,Point{3,T}}}}
     points::Vector{Point{3,T}}
-    nodes::Vector{NodeInfo{3,T,Tex,Tin,Int}}
+    nodes::Vector{NodeInfo{3,T,Tex,Tin}}
 end
 
 
@@ -18,7 +18,7 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
 
     TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
     msh = TriFace[]
-    nodes = NodeInfo{3,Float64,Int,Int,Int}[]
+    nodes = NodeInfo{3,Float64,Int,Int}[]
     # The first section should specify the external side
     # The others, if present are internal sides
     
@@ -44,7 +44,7 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
                 An = area(t) .* normal(t)
                 tp = centroid(t)
                 push!(msh, Triangle(vertices(t)...))
-                push!(nodes, NodeInfo(An, eid[i], nointid, eidx[i][k], tp))
+                push!(nodes, NodeInfo(An, eid[i], nointid, tp))
             end
         end
     else
@@ -120,7 +120,7 @@ function floor_mesh(tri, idx, msh)
     iex = [n.iex for n in msh.nodes[idx]]
     iin = [n.iin for n in msh.nodes[idx]]
     itri = [n.tri for n in msh.nodes[idx]]
-    nodes = [NodeInfo(A[i], iex[i], iin[i], itri[i], coords[i]) for i in eachindex(A)]
+    nodes = [NodeInfo(A[i], iex[i], iin[i], coords[i]) for i in eachindex(A)]
 
     return BuildingSurface(tri, coords, nodes)
     
