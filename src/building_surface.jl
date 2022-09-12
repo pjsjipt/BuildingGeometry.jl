@@ -2,11 +2,10 @@
 import StaticArrays: SVector
 import Meshes: connect, SimpleMesh
 
-struct BuildingSurface{T,Tex,Tin,TMesh}
+struct BuildingSurface{T,Tex,Tin}
     tri::Vector{Triangle{3,T,SVector{3,Point{3,T}}}}
     points::Vector{Point{3,T}}
     nodes::Vector{NodeInfo{3,T,Tex,Tin,Int}}
-    mesh::TMesh
 end
 
 
@@ -94,10 +93,7 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
 
     coords = centroid.(msh)
 
-    # Let's build a mesh
-    mesh = tri2mesh(msh)
-
-    return BuildingSurface(msh, coords, nodes, mesh)
+    return BuildingSurface(msh, coords, nodes)
     
 end
 
@@ -125,9 +121,8 @@ function floor_mesh(tri, idx, msh)
     iin = [n.iin for n in msh.nodes[idx]]
     itri = [n.tri for n in msh.nodes[idx]]
     nodes = [NodeInfo(A[i], iex[i], iin[i], itri[i], coords[i]) for i in eachindex(A)]
-    mesh = tri2mesh(tri)
 
-    return BuildingSurface(tri, coords, nodes, mesh)
+    return BuildingSurface(tri, coords, nodes)
     
 end
 
@@ -167,11 +162,9 @@ function mergemeshes(mshlst::AbstractVector{<:BuildingSurface{T}}) where {T}
         append!(nodes, msh.nodes)
     end
     
-    mesh = tri2mesh(tri)
-
-    return BuildingSurface(tri, points, nodes, mesh)
+    return BuildingSurface(tri, points, nodes)
     
 end
 
-#mergemeshes(mshlst...) = mergemeshes(collect(mshlst))
+mergemeshes(mshlst...) = mergemeshes(collect(mshlst))
 
