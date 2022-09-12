@@ -22,9 +22,12 @@ struct NodeInfo{Dim,T,TSide}
     side::TSide
 end
 
+nodearea(n::NodeInfo) = n.A
+nodepoint(n::NodeInfo) = n.point
 extnode(n::NodeInfo) = n.side[1]
 intnode(n::NodeInfo) = n.side[2]
-
+nodeside(n::NodeInfo,i) = n.side[i]
+nodeside(n::NodeInfo) = n.side
 
 
     

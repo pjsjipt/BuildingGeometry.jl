@@ -11,4 +11,5 @@ import Meshes: Point, Vec, Point3, Triangle
     include("test_discr_surface.jl")
     include("test_intersect_mesh.jl")
     include("test_buildsurface.jl")
+    include("test_forces.jl")
 end

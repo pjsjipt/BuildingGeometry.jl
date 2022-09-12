@@ -50,19 +50,21 @@ function intersectmesh!(msh::AbstractVector{Tri},
                 ti = imsh[ii]
                 # Lets compute the intersection
                 pts = intersect_tri(te, ti; rtol=rtol)
-
                 if length(pts) > 2
                     for l in firstindex(pts)+1:lastindex(pts)-1
                         new_tri = Triangle(pts[begin], pts[l], pts[l+1])
                         tp = centroid(new_tri)
-                        An = area(new_tri) .* normal(new_tri)
-                        nn = NodeInfo(An, tp, (eid, iid))
-                        push!(msh, new_tri)
-                        push!(nodes, nn)
+                        A = area(new_tri)
+                        if A > 0
+                            An = A .* normal(new_tri)
+                            nn = NodeInfo(An, tp, (eid, iid))
+                            push!(msh, new_tri)
+                            push!(nodes, nn)
+                        end
                     end
                 end
                 
-                                           
+                
             end
         end
     end
