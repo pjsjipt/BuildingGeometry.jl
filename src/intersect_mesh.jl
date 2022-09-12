@@ -23,7 +23,7 @@ similar.
  * `triin` List of indices to original mesh
 """
 function intersectmesh!(msh::AbstractVector{Tri},
-                        nodes::AbstractVector{NodeInfo{3,T,Tex,Tin}},
+                        nodes::AbstractVector{NodeInfo{3,T,Tuple{Tex,Tin}}},
                         eid::Tex, emsh, etri, iid::Tin,
                         imsh, itri; rtol=1e-8) where {Tri,T,Tex,Tin}
     et = sort(unique(etri))  # Independent cad mesh triangles of the external mesh
@@ -56,7 +56,7 @@ function intersectmesh!(msh::AbstractVector{Tri},
                         new_tri = Triangle(pts[begin], pts[l], pts[l+1])
                         tp = centroid(new_tri)
                         An = area(new_tri) .* normal(new_tri)
-                        nn = NodeInfo(An, eid, iid, tp)
+                        nn = NodeInfo(An, tp, (eid, iid))
                         push!(msh, new_tri)
                         push!(nodes, nn)
                     end

@@ -13,16 +13,17 @@ The pressure information can refer to an element of surface or a node.
 So to calculate forces and moments, the contribution of this node is given
 by the area times the normal
 """
-struct NodeInfo{Dim,T,Tex,Tin}
+struct NodeInfo{Dim,T,TSide}
     "Area times outward normal"
     A::Vec{Dim,T}
-    "External node"
-    iex::Tex
-    "Internal node"
-    iin::Tin
     "Coordinates of the node"
     point::Point{Dim,T}
+    "Information on node sides"
+    side::TSide
 end
+
+extnode(n::NodeInfo) = n.side[1]
+intnode(n::NodeInfo) = n.side[2]
 
 
 

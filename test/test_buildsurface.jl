@@ -8,7 +8,7 @@ let
     Ne = length(pts)
     Ae = zeros(Ne)
     for n in m.nodes
-        Ae[n.iex] += norm(n.A)
+        Ae[n.side[1]] += norm(n.A)
     end
     @test sum(Ae) ≈ 4.0
     @test all(Ae .≈ 1.0)
@@ -25,8 +25,8 @@ let
     
     for n in m.nodes
         A = norm(n.A)
-        Ae[n.iex] += A
-        Ai[n.iin-4] += A
+        Ae[n.side[1]] += A
+        Ai[n.side[2]-4] += A
     end
     @test sum(Ae) ≈ 4.0
     @test sum(Ai) ≈ 4.0
@@ -47,8 +47,8 @@ let
     
     for n in m.nodes
         A = norm(n.A)
-        Ae[n.iex] += A
-        Ai[n.iin] += A
+        Ae[n.side[1]] += A
+        Ai[n.side[2]] += A
     end
     @test sum(Ae) ≈ 1.0
     @test sum(Ai) ≈ 1.0
@@ -73,8 +73,8 @@ let
     
     for n in m.nodes
         A = norm(n.A)
-        Ae[n.iex] += A
-        n.iin > 0 && (Ai[n.iin] += A)
+        Ae[n.side[1]] += A
+        n.side[2] > 0 && (Ai[n.side[2]] += A)
     end
     @test sum(Ae) ≈ 1.0
     @test sum(Ai) ≈ 0.75

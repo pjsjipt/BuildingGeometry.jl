@@ -115,7 +115,7 @@ let
     TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
 
     msh = TriFace[]
-    nodes = NodeInfo{3,Float64,Int,Int}[]
+    nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
 
     Ne = length(pts)
     Ni = length(ptsi)
@@ -138,8 +138,8 @@ let
 
     for node in nodes
         A = norm(node.A)
-        Ae[node.iex] += A
-        Ai[node.iin] += A
+        Ae[node.side[1]] += A
+        Ai[node.side[2]] += A
     end
 
     @test sum(Ae) ≈ 4.0
@@ -160,7 +160,7 @@ let
     TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
 
     msh = TriFace[]
-    nodes = NodeInfo{3,Float64,Int,Int}[]
+    nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
 
     Ne = length(epts)
     Ni = length(ipts)
@@ -178,8 +178,8 @@ let
 
     for node in nodes
         A = norm(node.A)
-        Ae[node.iex] += A
-        Ai[node.iin] += A
+        Ae[node.side[1]] += A
+        Ai[node.side[2]] += A
     end
 
     Ave = [sum(area.(ev)) for ev in evor] 
