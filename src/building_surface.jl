@@ -119,7 +119,6 @@ function floor_mesh(tri, idx, msh)
     coords = centroid.(tri)
     iex = [n.side[1] for n in msh.nodes[idx]]
     iin = [n.side[2] for n in msh.nodes[idx]]
-    itri = [n.tri for n in msh.nodes[idx]]
     nodes = [NodeInfo(A[i], coords[i], (iex[i], iin[i])) for i in eachindex(A)]
 
     return BuildingSurface(tri, coords, nodes)
