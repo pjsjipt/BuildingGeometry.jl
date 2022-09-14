@@ -21,12 +21,12 @@ are available and its contribution should be added directly.
 
 The moments are calculated with respect to point `point`.
 """
-function addforcecontrib!(F::AbstractMatrix{T}, nodes::AbstractVector{<:NodeInfo{Dim,T}}, forces=(1,2,6);
-                          sgn=1, side=1, point=Point{Dim,T}(0,0,0)) where {Dim,T}
+function addforcecontrib!(F::AbstractMatrix{T}, msh::BuildingSurface{T}, forces=(1,2,6);
+                          sgn=1, side=1, point=Point{3,T}(0,0,0)) where {T}
     nf = length(forces)
     (nf != size(F,1)) && error("`forces` and `F` have incompatible lengths")
     
-    for n in nodes
+    for n in msh.nodes
         i =  nodeside(n,side)
         if i <= 0
             # No pressure tap corresponding to it
@@ -43,23 +43,36 @@ function addforcecontrib!(F::AbstractMatrix{T}, nodes::AbstractVector{<:NodeInfo
     return F
 end
 
-function forcematrix(ncols::Integer, nodes::AbstractVector{<:NodeInfo{Dim,T}}, forces=(1,2,6);
-                     sgn=1, side=1, point=Point{Dim,T}(0,0,0)) where {Dim,T}
+function forcematrix(ncols::Integer, msh::BuildingSurface{T}, forces=(1,2,6);
+                     sgn=1, side=1, point=Point{3,T}(0,0,0)) where {T}
     
     F = zeros(T, length(forces), ncols)
-    return addforcecontrib!(F, nodes, forces; sgn=sgn, side=side, point=point)
+    return addforcecontrib!(F, msh, forces; sgn=sgn, side=side, point=point)
 end
 
                      
-function addforcecontrib!(F::AbstractMatrix{T}, nodes::AbstractVector{MESH}, forces=(1,2,6); interleaved=false,
-                          sgn=1, side=1, point::AbstractVector{Point{Dim,T}}) where {Dim,T,MESH<:AbstractVector{<:NodeInfo{Dim,T}}}
-    npts = length(point)
-    nnodes = length(nodes)
+function addforcecontrib!(F::AbstractMatrix{T},
+                          msh::AbstractVector{<:BuildingSurface{T}},
+                          forces=(1,2,6); interleaved=false, sgn=1, side=1,
+                          point=Point{3,T}(0,0,0)) where {T}
+    
+    nnodes = length(msh)
 
-    (npts != nnodes) && error("Number of points should the same as the number of nodes")
     nf = length(forces)
     (nnodes*nf != size(F,1)) && error("size(F,1) should equal to the number of meshes X number of forces ($(nnodes*nf))")
 
+    
+    if isa(point, Point)
+        p = repeat([point], nnodes)
+    elseif isa(point, AbstractVector{<:Point})
+        p = point
+    else
+        error("Invalid point: $point of invalid type!")
+    end
+    npts = length(p)
+    (npts != nnodes) && error("Number of points should the same as the number of nodes")
+
+    
     rows = zeros(Int,nf,nnodes)
     if interleaved
         cnt = 1
@@ -79,33 +92,22 @@ function addforcecontrib!(F::AbstractMatrix{T}, nodes::AbstractVector{MESH}, for
         end
     end
     
-    
-    for (i,n) in enumerate(nodes)
-        addforcecontrib!(view(F, rows[:,i], :), nodes[i], forces; sgn=sgn, side=side, point=point[i])
+    for (i,m) in enumerate(msh)
+        addforcecontrib!(view(F, rows[:,i], :), m, forces;
+                         sgn=sgn, side=side, point=p[i])
     end
     return F
 end
 
-                     
-function addforcecontrib!(F::AbstractMatrix{T}, nodes::AbstractVector{MESH}, forces=(1,2,6); interleaved=false,
-                          sgn=1, side=1, point=Point{Dim,T}(0,0,0)) where {Dim,T,MESH<:AbstractVector{<:NodeInfo{Dim,T}}}
-    points = repeat(point, length(nodes))
-    return addforcecontrib!(F, nodes, forces; interleaved=interleaved, sgn=sng, side=side, point=points)
-end
-
-
                     
                      
-function forcematrix(ncols::Integer, nodes::AbstractVector{MESH}, forces=(1,2,6); interleaved=false,
-                     sgn=1, side=1, point::AbstractVector{Point{Dim,T}}) where {Dim,T,MESH<:AbstractVector{<:NodeInfo{Dim,T}}}
-    F = zeros(T, length(nodes)*length(forces), ncols)
-    return addforcecontrib!(F, nodes, forces; interleaved=interleaved, sgn=sgn, side=side, point=point)
-end
-
-function forcematrix(ncols::Integer, nodes::AbstractVector{MESH}, forces=(1,2,6); interleaved=false,
-                     sgn=1, side=1, point=Point{Dim,T}(0,0,0)) where {Dim,T,MESH<:AbstractVector{<:NodeInfo{Dim,T}}}
-    points = repeat(point, length(nodes))
-    return forcematrix(ncols, nodes, forces; interleaved=interleaved, sgn=sgn, side=side, point=points)
+function forcematrix(ncols::Integer, msh::AbstractVector{<:BuildingSurface{T}},
+                     forces=(1,2,6); interleaved=false, sgn=1, side=1,
+                     point=Point{3,T}(0,0,0)) where {T}
+    
+    F = zeros(T, length(msh)*length(forces), ncols)
+    return addforcecontrib!(F, msh, forces; interleaved=interleaved,
+                            sgn=sgn, side=side, point=point)
 end
 
 

@@ -37,7 +37,7 @@ let
     @test all(Ai .≈ 1/Ni)
 
     Fe = zeros(6,10)
-    addforcecontrib!(Fe, m.nodes, (1,2,3,4,5,6); sgn=1, side=1)
+    addforcecontrib!(Fe, m, (1,2,3,4,5,6); sgn=1, side=1)
 
     @test all(Fe[1,:] .≈ 0)  # No forces in x
     @test all(Fe[2,:] .≈ 0)  # No forces in y
@@ -51,7 +51,7 @@ let
 
  
     Fi = zeros(6,10)
-    addforcecontrib!(Fi, m.nodes, (1,2,3,4,5,6); sgn=1, side=2)
+    addforcecontrib!(Fi, m, (1,2,3,4,5,6); sgn=1, side=2)
     @test all(Fi[1,:] .≈ 0)  # No forces in x
     @test all(Fi[2,:] .≈ 0)  # No forces in y
     @test all(Fi[3,Ne .+ (1:Ni)] .≈ 1/Ni)
@@ -74,7 +74,7 @@ let
                            (points=ipts,tri=1:2, id=Ne .+ (1:Ni))])
 
     Fe = zeros(6,10)
-    addforcecontrib!(Fe, m.nodes, (1,2,3,4,5,6); sgn=1, side=1)
+    addforcecontrib!(Fe, m, (1,2,3,4,5,6); sgn=1, side=1)
 
     @test all(Fe[1,1:Ne] .≈ 0)  # No forces in x
     @test all(Fe[2,1:Ne] .≈ -1/Ne)  # No forces in y
@@ -86,7 +86,7 @@ let
     @test all(Fe[6,1:Ne] .≈ -x * Ae) 
    
     Fi = zeros(6,10)
-    addforcecontrib!(Fi, m.nodes, (1,2,3,4,5,6); sgn=1, side=2)
+    addforcecontrib!(Fi, m, (1,2,3,4,5,6); sgn=1, side=2)
      
     @test all(Fi[1,Ne .+ (1:Ni)] .≈ 0)  # No forces in x
     @test all(Fi[2,Ne .+ (1:Ni)] .≈ [-0.5, -0.5])  # 
@@ -169,5 +169,90 @@ let
     # I will now slice the buiding
     zh = [0.0, 4.0, 8.0, 12.0, 16.0]
     floors = buildingslice(bmsh, zh)
+
+    # Let's check the areas of each node in each slice
+    nz = length(zh)-1
+    A = zeros(Nt,nz)
+    for (k,f) in enumerate(floors)
+        a = norm.(nodearea.(f.nodes))
+        e = nodeside.(f.nodes, 1)
+        i = nodeside.(f.nodes, 2)
+        for j in eachindex(a)
+            A[e[j],k] += a[j]
+            A[i[j],k] += a[j]
+        end
+    end
+
+    for i in 1:4
+        @test sum(A[:,i]) ≈ 8*4 * 4 * 2
+    end
+    # Each cell should have an area = 16 or 0
+    @test sum(A.≈16) == 32*2
+
+    # Agora, vamos trabalhar com as forças
+    MF1 = forcematrix(Nt, bmsh, (1,2,3,4,5,6); sgn=1, side=1) 
+    MF2 = forcematrix(Nt, bmsh, (1,2,3,4,5,6); sgn=1, side=2)
+    @test all(MF1[:,Ne .+ (1:Ni)] .== 0)  # Internal nodes should not contribute
+    @test all(MF2[:,1:Ne] .== 0) # External nodes should not contribute
+    # For constant pressure, all forces should add up to zero
+    @test all(isapprox.(sum(MF1,dims=2), 0, atol=1e-8))
+    @test all(isapprox.(sum(MF2,dims=2), 0, atol=1e-8))
+
+    # Let's check per face
+    # Face 1. Fx = 0, Fy = 128, Fz = 0, Mx = 128*8, My=Mz=0
+    idx = eidx[1]
+    @test isapprox(sum(MF1[1,idx]),0, atol=1e-8)
+    @test sum(MF1[2,idx]) ≈ -8*16
+    @test isapprox(sum(MF1[3,idx]),0, atol=1e-8)
+    @test sum(MF1[4,idx]) ≈ +8*16 * 8
+    @test isapprox(sum(MF1[5,idx]),0, atol=1e-8)
+    @test isapprox(sum(MF1[6,idx]),0, atol=1e-8)
+
+    # Face 2. Fx = 128, Fy = 0
+    idx = eidx[2]
+    @test sum(MF1[1,idx]) ≈ 8*16
+    @test isapprox(sum(MF1[2,idx]),0, atol=1e-8)
+    @test isapprox(sum(MF1[3,idx]),0, atol=1e-8)
+    @test isapprox(sum(MF1[4,idx]),0, atol=1e-8)
+    @test sum(MF1[5,idx]) ≈ +8*16 * 8
+    @test isapprox(sum(MF1[6,idx]),0, atol=1e-8)
+
+    # Let's test  FM2, face 1
+    idx = iidx[1] .+ Ne
+    @test isapprox(sum(MF2[1,idx]),0, atol=1e-8)
+    @test sum(MF2[2,idx]) ≈ -8*16
+    @test isapprox(sum(MF2[3,idx]),0, atol=1e-8)
+    @test sum(MF2[4,idx]) ≈ +8*16 * 8
+    @test isapprox(sum(MF2[5,idx]),0, atol=1e-8)
+    @test isapprox(sum(MF2[6,idx]),0, atol=1e-8)
+
+
+    # Let's try to do the samething for slices.
+    # We will calculate for each slice and rebuild the MF1 and MF2 matrices
+    SF1 = forcematrix(Nt, floors, (1,2,3,4,5,6), side=1)
+    SF2 = forcematrix(Nt, floors, (1,2,3,4,5,6), side=2)
+    kf = [(1:4) .+ i for i in 0:4:23 ]
+    SF1i = vcat([sum(SF1[k,:],dims=1) for k in kf]...)
+    SF2i = vcat([sum(SF2[k,:],dims=1) for k in kf]...)
+    @test maximum(abs, SF1i-MF1) < 1e-8
+    @test maximum(abs, SF2i-MF2) < 1e-8
+    # Let-'s test Fy and Mx for second floor first face, epts[3]
+    @test SF1[6,3] ≈ -16
+    @test SF1[14,3] ≈ 16*6
+    
+    
+    SF1 = forcematrix(Nt, floors, (1,2,3,4,5,6), side=1, interleaved=true)
+    SF2 = forcematrix(Nt, floors, (1,2,3,4,5,6), side=2, interleaved=true)
+    kf = [(1:6:24) .+ i for i in 0:5 ]
+    SF1i = vcat([sum(SF1[k,:],dims=1) for k in kf]...)
+    SF2i = vcat([sum(SF2[k,:],dims=1) for k in kf]...)
+    @test maximum(abs, SF1i-MF1) < 1e-8
+    @test maximum(abs, SF2i-MF2) < 1e-8
+    # Let-'s test the Fy for second floor, epts[3]
+    @test SF1[8,3] ≈ -16
+    @test SF1[10,3] ≈ 16*6
+    
+    
+    
     
 end

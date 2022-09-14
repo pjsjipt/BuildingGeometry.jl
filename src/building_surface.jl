@@ -112,7 +112,7 @@ function tri2mesh(tri::AbstractVector{<:Triangle{Dim,T}}) where {Dim,T}
     end
     return SimpleMesh(verts, connect.(conn, Triangle))
 end
-
+tri2mesh(m::BuildingSurface) = tri2mesh(m.tri)
 
 function floor_mesh(tri, idx, msh)
     A = [area(t) .* normal(t) for t in tri]
