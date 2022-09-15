@@ -1,6 +1,7 @@
 import Meshes: Geometry
 import StaticArrays: SA, SMatrix
-
+import Unitful
+import Unitful: uparse, ustrip
 """
 `reescalemesh(tri; scale=1/200, origin=Point(0,0,0), unit="mm")`
 

@@ -37,7 +37,7 @@ function addforcecontrib!(F::AbstractMatrix{T}, msh::BuildingSurface{T}, forces=
         M⃗ = r⃗ × A⃗
         f⃗ = [A⃗; M⃗]
         for (kj,k) in enumerate(forces)
-            F[kj,i] += sgn*f⃗[k]
+            F[kj,i] -= sgn*f⃗[k]
         end
     end
     return F
