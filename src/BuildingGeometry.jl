@@ -23,6 +23,8 @@ export NodeInfo, nodearea, nodepoint, nodeside
 export BuildingSurface, buildsurface, buildingslice, mergemeshes
 export readraw,tri2mesh
 export addforcecontrib!, forcematrix
+export reescalemesh, translatemesh, rotatemesh
+
 
 include("polygons.jl")
 include("polyhedron.jl")
@@ -34,5 +36,6 @@ include("intersect_mesh.jl")
 include("building_surface.jl")
 include("raw.jl")
 include("forces.jl")
+include("transform.jl")
 
 end
