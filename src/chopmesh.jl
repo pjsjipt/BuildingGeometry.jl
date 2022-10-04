@@ -1,7 +1,19 @@
 # Choping triangles with Convex polyhedrons
 import StaticArrays: SVector
 
+"""
+`cut_with_plane(pts, p0, n, circ; atol=1e-8)`
 
+Given a polygon or set of linked lines characterized by a vector of points,
+this function will cut it using a plane characterize by a point `p0` and normal `n`.
+
+The function will return the points inside the plane. If the plane crosses the
+polygons or lines, new segments that consist of the intersection of the polygon
+and the plane will be added.
+
+This function is used throughout this package for many types of operations.
+
+"""
 function cut_with_plane(pts::AbstractVector{Point{3,T}},
                         p0, n, circ=true; atol=1e-8) where{T}
 
@@ -54,7 +66,23 @@ function cut_with_plane(pts::AbstractVector{Point{3,T}},
     return out
 end
 
+"""
+`chopwithpolyhedron(poly, tri; atol=1e-8)`
 
+Uses a polyhedron to chop a triangle, meaning that the function
+will return parts of the triangle that are insided the polygon.
+
+First, this function checks if the boundaing boxes of polyhedron and triangle
+overlap. If they don't, the result is empty.
+
+If every vertex of the triangle is inside the polyhedron, just return the triangle.
+
+Then, for each face of the polyhedron, the function calls [`cut_with_plane`](@ref)
+chopping away the parts of the triangle that are outside the polyhedron.
+
+The function returns a list of triangles that are inside the polyhedron.
+
+"""
 function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
                             atol=1e-8) where {T}
     

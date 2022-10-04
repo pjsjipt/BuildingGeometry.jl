@@ -13,6 +13,15 @@ struct ConvexPolyhedron{T} <: Polyhedron{3,T}
     vmap::Dict{Int,Int}
 end
 
+"""
+`ConvexPolyhedron(vertices, faces)`
+
+Creates a a convex polyhedron from the vertices and the faces.
+The faces are specified by the indices of its vertices that make up a polygon.
+
+The faces will be oriented so that the normal to the polygon is external to
+the polyhedron.
+"""
 function ConvexPolyhedron(vertices::AbstractVector{Point{3,T}}, faces) where {T}
     vmap = Dict{Int,Int}()
     imap = Dict{Int,Int}()

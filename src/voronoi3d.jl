@@ -11,13 +11,29 @@ function bboxaux!(xlims, p)
 end
 
 
-function makebbox(ranges...) where {T}
+function makebbox(ranges...)
     nr = length(ranges)
     p = [1,2^(nr-1)] # Outer and inner initial
     return map(x->bboxaux!(x, p), ranges)
     
 end
 
+"""
+`voronoi(x,y,z; bbox,nd,auxpts)`
+`voronoi(pts; bbox,nd,auxpts)`
+
+Calls `scipy.spatial.Voronoi` to compute the 3D Voronoi diagram of a collection
+of 3D points.
+
+Before computing the Voronoi diagram, auxiliary points, are added and the corresponding
+volumes are excluded. `scipy.spatial.Voronoi` call `QHull` library and the points
+at infinity are all the same which is a difficulty. If a bounding box is provieded,
+the extremities are auxilary points which help creating the diagram without the infinity
+points. If no bounding box is provided, parameter `nd` is used to create it using `nd` × the largest separation of the points. Further auxiliary points can be provided.
+
+The function returns a [`VoronoiMesh`](@ref) object which contains every polyhedron
+of the Voronoi diagram and the connectivity - between nodes and vertices.
+"""
 function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
     length(x) == length(y) == length(z) || error("Vectors x, y and z should have the same length")
     
@@ -220,8 +236,6 @@ Base.getindex(v::VoronoiMesh, idx) = v.cells[idx]
 
 
 
-
-    
 function volume2mesh(faceidx)
 
     # Convert to triangles

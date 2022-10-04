@@ -51,6 +51,11 @@ translatemesh(geom::G, u::Vec) where {G<:Geometry} =
 
 translatemesh(p::Point, u::Vec) = p + u
 
+"""
+`rotationmatrix(θ, ω=Vec(0.0, 0.0, 1.0))`
+
+Calculate the rotation matrix around vector `ω` by an angle of `θ`.
+"""
 function rotationmatrix(θ, ω=Vec(0.0, 0.0, 1.0))
     c = cos(θ)
     s = sin(θ)
@@ -61,7 +66,12 @@ function rotationmatrix(θ, ω=Vec(0.0, 0.0, 1.0))
         (w*u*(1-c)-v*s)  (w*v*(1-c)+u*s)  (c + w*w*(1-c))]
 end
 
-    
+"""
+`rotatemesh(msh, θ, ω, p0)`
+
+Rotates a mesh (or geometry) by angle `θ` around an axis `ω` passing through point
+`p0`.
+"""
 function rotatemesh(geom::G, θ, ω::Vec, p0=Point(0,0,0)) where {G<:Geometry}
     R = rotationmatrix(θ, ω)
     

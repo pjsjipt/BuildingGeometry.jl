@@ -1,6 +1,27 @@
 export discrsurface
 # Surface discretization
 
+
+"""
+`discrsurface(tri, idx, pts)`
+`discrsurface(tri, pts)`
+
+Given a surface made up of triangles in vector `tri` this function will
+find the influence region of each point in vector `pts` assumed to be located
+on the surface. If only parts the triangle mesh make up the surface, parameter
+`idx` can be used to select the triangles that should be considered.
+
+The function computes the 3D Voronoi diagram of each point. Then uses the resulting
+polyhedrons to chop the triangle mesh into regions of influence of each point.
+
+Region of influence here is the parts of the triangle mesh that is closest to a point
+in `pts` than anyother point in `pts`.
+
+Care should be taken to choose the points well: a region on another side of the surface
+could potentially be closest to a point if the points are not well distributed.
+
+The function returns the triangles that make up each region of influence. It returns, as well, the index of the original triangle from where it was created.
+"""
 function discrsurface(tri, idx::AbstractVector{<:Integer},
                       pts::AbstractVector{Point{3,Float64}};
                       rtol=1e-8, bbox=nothing, nd=8)

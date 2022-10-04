@@ -1,6 +1,11 @@
 
 # reading raw files
 
+"""
+`readraw(fname)`
+
+Reads a `.raw` 3d file into a list of surfaces discretized into triangles.
+"""
 function readraw(fname)
     TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
     mshlst = Vector{TriFace}[]

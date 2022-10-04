@@ -6,7 +6,7 @@
 
 Computes the intersection between external and internal surface  meshes. It
 should be pointed out that this function assumes that both external and internal
-meshes are overlaid in the same surface mesh.
+meshes are overlaid on the same surface mesh.
 
 The external surface mesh is given by triangles. Each triangle has has an index
 that referes to the original triangle in the surface mesh. The internal mesh is

@@ -9,7 +9,16 @@ struct ConvexPolygon{Dim,T,C<:Chain{Dim,T}} <: Polygon{Dim,T}
         new(contour)
     end
 end
+"""
+`ConvexPolygon(contour)`
+`ConvexPolygon(x,y)`
+`ConvexPolygon(x,y,z)`
+`ConvexPolygon(pts)`
 
+Create a convex polygon. 
+
+
+"""
 ConvexPolygon(contour::C) where {Dim,T,V,C<:Chain{Dim,T,V}} =
     ConvexPolygon{Dim,T,Chain{Dim,T,V}}(contour)
 
@@ -31,7 +40,12 @@ Meshes.vertices(p::ConvexPolygon) = vertices(p.contour)
 Meshes.nvertices(p::ConvexPolygon) = nvertices(p.contour)
 
                                      
+"""
+`normal_(p)`
 
+Compute the area vector of a convex polygon. By area vector, it is meant the outer
+ vector whose length is the area of the convex polygon.
+"""
 function normal_(p::ConvexPolygon{2,T}) where {T}
     pts = vertices(p)
     A = zero(T)
@@ -48,7 +62,14 @@ end
 
 
 Meshes.area(p::ConvexPolygon{2}) = abs(normal_(p))
-    
+
+"""
+`pnpoly(poly, p)`
+
+Determine if a point is inside a polygon. If a point is on the boundary of the polygon
+this function might return `true` or `false` depending on floating point errors and
+such.
+"""
 function pnpoly(poly::ConvexPolygon{2}, p::Point{2})
 
     v = vertices(poly)
@@ -138,6 +159,11 @@ function centroid(p::ConvexPolygon{3,T}) where {T}
 end
 
 
+"""
+`poly2mesh(poly)`
+
+Creates a triangle mesh from a convex polygon. 
+"""
 function poly2mesh(poly::ConvexPolygon)
     pts = vertices(poly)
     
