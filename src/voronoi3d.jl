@@ -197,7 +197,18 @@ end
 
              
     
-    
+"""
+`VoronoiMesh(p,v,conn,vconn,vpconn)`
+
+Stores information related to the Voronoi diagram of a set of points.
+This mesh stores the points used to generate the diagram, the vertices
+of the diagram, the convex polyhedrons of each volume of the Voronoi diagram
+and connectivity. It has connectivity information related to
+
+ * Points Neighboring a point
+ * Vertices neighboring a vertex
+ * Points neighboring a vertex
+"""
 struct VoronoiMesh{Dim,T,VP<:AbstractVector{Point{Dim,T}},
                    VV<:AbstractVector{Point{Dim,T}},CP,
                    VPO<:AbstractVector{CP}}

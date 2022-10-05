@@ -30,11 +30,7 @@ The result is a mesh of triangles that span the entire surface of the building. 
 ## Contents
 
 ```@contents
-Pages = ["tutorial.md"]
-
-```@index
+Pages = ["tutorial.md", "docstrings.md"]
 ```
 
-```@autodocs
-Modules = [BuildingGeometry]
-```
+

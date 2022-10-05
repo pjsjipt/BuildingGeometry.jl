@@ -53,7 +53,7 @@ end
 `forcematrix(F, nodes, forces=(1,2,6), sgn=1, side=1, point=Point(0,0,0))`
 
 Creates a force matrix from a [`BuildingSurface`](@ref) object. This function
-initializes the matrix and calls [`addforcecontrib`](@ref).
+initializes the matrix and calls [`addforcecontrib!`](@ref).
 
 """
 function forcematrix(ncols::Integer, msh::BuildingSurface{T}, forces=(1,2,6);
@@ -163,7 +163,7 @@ end
 `forcematrix(F, msh, forces; interleaved=false, sgn=1, side=1,
                               point=Point{3,T}(0,0,0))`
 
-Allocates memory and calls [`addforcecontrib`](@ref) to compute the force matrix
+Allocates memory and calls [`addforcecontrib!`](@ref) to compute the force matrix
 for different sections (usually floors of a building).
 """                     
 function forcematrix(ncols::Integer, msh::AbstractVector{<:BuildingSurface{T}},

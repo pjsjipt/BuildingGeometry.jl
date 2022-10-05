@@ -269,9 +269,9 @@ end
 """
 `mergemeshes(mshlst)`
 
-Each surface is discretized independently resulting in a [`BuildingMesh`](@ref)
+Each surface is discretized independently resulting in a [`BuildingSurface`](@ref)
 object. This contains information on internal and external pressure taps, triangles
-and positions. This function merges the meshes into a single [`BuildingMesh`](@ref)
+and positions. This function merges the meshes into a single [`BuildingSurface`](@ref)
 that can be used to view results in 3d plots or slice the building into floors.
 """
 function mergemeshes(mshlst::AbstractVector{<:BuildingSurface{T}}) where {T}
