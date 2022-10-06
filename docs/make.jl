@@ -1,4 +1,5 @@
 using BuildingGeometry
+using Meshes
 using Documenter
 
 DocMeta.setdocmeta!(BuildingGeometry, :DocTestSetup, :(using BuildingGeometry); recursive=true)
