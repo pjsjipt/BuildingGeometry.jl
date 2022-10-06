@@ -47,6 +47,7 @@ To plot the meshes, there is the function [`tri2mesh`](@ref) that converts the v
 
 ```@example 1
 using MeshViz
+using Colors
 import GLMakie
 viz(tri2mesh(trilst));
 GLMakie.save("figures/cigarbuilding1.png", GLMakie.current_figure());
@@ -76,8 +77,8 @@ for z in zh
     end
 end    
 
-viz(tri2mesh(trilst));
-viz!(epts, color=:red);
+viz(epts, color=:red);
+viz!(tri2mesh(trilst), color=:gray, alpha=0.3);
 GLMakie.save("figures/cigarbuilding2.png", GLMakie.current_figure());
 ```
 
@@ -207,3 +208,120 @@ println("Dimensions of `Fslices`: $(size(Fslices))")
 
 ## A more complex building
 
+
+This new building has all the percs shown in the original figure. It has an internal division dividing the cylinder in two halves. One halve is isolated and therefore there are not internal pressure taps (as was the case in the simple building above). But the other half has both external pressure taps and internal pressure taps.
+
+
+This model has two surfaces:
+ 1. The cylindrical surface with external pressure taps all over (the same as the simple building above). This surface has two sections:
+    * One section (half of the cylinder) has both internal and external pressure taps.
+    * The second section, the other half has only external pressure taps
+ 2. The flat surface in that splits the cylinder in half with pressure taps on one side only (we will call this side the exterior).
+
+### Defining the geometry
+
+We will start out with the original geometry of the cicrcular building.
+
+```@example 2
+using Meshes, MeshViz
+import GLMakie
+using BuildingGeometry
+
+H = 150.0 # Height
+D = 30.0  # Diameter
+R = D/2   # Radius
+
+θ = 0.0:15.0:360
+nθ = length(θ)
+x1 = R * cosd.(θ)
+y1 = R * sind.(θ)
+
+p1 = Point.(x1, y1, 0.0)
+p2 = Point.(x1, y1, H)
+
+face1 = [Triangle(p1[1], p1[2], p2[2]), Triangle(p1[1], p2[2], p2[1])]
+
+for i in 2:nθ-1
+    push!(face1, Triangle(p1[i], p1[i+1], p2[i+1]))
+    push!(face1, Triangle(p1[i], p2[i+1], p2[i]))
+end
+
+
+pf1 = Point(R, 0, 0)
+pf2 = Point(-R, 0, 0)
+pf3 = Point(-R, 0, H)
+pf4 = Point(R, 0, H)
+face2 = [Triangle(pf1, pf2, pf3), Triangle(pf1, pf3, pf4)]
+
+viz(tri2mesh(face1), color=:blue);
+viz!(tri2mesh(face2), color=:red);
+GLMakie.save("figures/building1.png", GLMakie.current_figure());
+```
+
+![Prédio](figures/building1.png)
+
+### Defining the external and internal pressure taps
+
+The external pressure taps are the same as the simple building. But now we need to add internal pressure taps and external pressure taps on the second face.
+
+
+```@example 2
+nr = 10 # Number of rows
+dz = H/nr  # Height of each row
+zh = range(dz/2, step=dz, length=nr)
+θ2 = range(15/2, step=15, length=24)
+
+epts1 = Point3[]
+
+for z in zh
+    for ang in θ2
+    	x = R * cosd(ang)
+	y = R * sind(ang)
+	push!(epts1, Point(x, y, z))
+    end
+end    
+
+# Internal nodes of face 1
+nri = 3
+dzi = H / nri
+zhi = range(dzi/2, step=dzi, length=nri)
+θi = range(15.0, step=30, length=6)
+ipts1  = Point3[]
+
+for z in zhi
+    for ang in θi
+    	x = R * cosd(ang)
+	y = R * sind(ang)
+	push!(ipts1, Point(x, y, z))
+    end
+end
+
+
+
+# External nodes of face 2
+
+nx2 = 3
+dx2 = D/nx2
+x2 = range(-R+dx2/2, step=dx2, length=nx2)
+epts2 = Point3[]
+
+for z in zhi
+    for x in x2
+    	push!(epts2, Point(x, 0.0, z))
+    end
+end
+
+
+
+
+viz(epts1,color=:red)
+viz!(ipts1, color=:blue)
+viz!(epts2, color=:green)
+
+viz!(tri2mesh(face1), color=:gray, alpha=0.3);
+viz!(tri2mesh(face2), color=:gray, alpha=0.3)
+
+GLMakie.save("figures/building2.png", GLMakie.current_figure());
+```
+
+![Building with pressure taps](figures/building2.png)
