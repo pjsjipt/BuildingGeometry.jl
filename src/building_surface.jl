@@ -119,7 +119,7 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
         eid = esec.id
     end
     if haskey(esec, :tag)
-        etag = sec.tag # Tag is specified
+        etag = esec.tag # Tag is specified
     else
         etag = tag # Use default tag
     end

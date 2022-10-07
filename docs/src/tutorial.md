@@ -252,13 +252,7 @@ pf2 = Point(-R, 0, 0)
 pf3 = Point(-R, 0, H)
 pf4 = Point(R, 0, H)
 face2 = [Triangle(pf1, pf2, pf3), Triangle(pf1, pf3, pf4)]
-
-viz(tri2mesh(face1), color=:blue);
-viz!(tri2mesh(face2), color=:red);
-GLMakie.save("figures/building1.png", GLMakie.current_figure());
 ```
-
-![Prédio](figures/building1.png)
 
 ### Defining the external and internal pressure taps
 
@@ -325,3 +319,115 @@ GLMakie.save("figures/building2.png", GLMakie.current_figure());
 ```
 
 ![Building with pressure taps](figures/building2.png)
+
+### Discretizing the building
+
+Now we will discretize the surfaces of the building. This case is more complicated than the simple building above. In this case, we have to surfaces. The cylindrical outer surface and the internal subdivision. But there is another complication. On the cylindrical outer surface, one section has pressure taps and on the other there is no pressure tap so this surface should decomposed into 2 sections.
+
+There are other issues that should be taken into account. The strucutre designer wants the loads per floor but loads on the open section of the outer surface with internal and external pressure taps. To be able to handle these different faces and sections, the [`NodeInfo`](@ref) has a `tag` fields that can associate an `Int` tag on the external side and on the internal side. So we will decompose the surface as follows
+
+ 1. `face1` with 240 external pressure taps, external tag = 1
+    1. Section with 18 internal pressure taps - internal tag = 2
+    2. Section without internal pressure taps - internal tag = 0
+ 2. `face2` with 9 external pressure taps and no internal pressure taps, external tag = 3, internal tag = 0 (repeat for face1 section 2)
+
+The nodes will be numbered sequentially:
+
+ 1. External taps on the cylindrical surface (1-240), coordinates `epts1`
+ 2. External taps on the internal straight plane (241-249), coordinates `epts2`
+ 3. Internal taps on one half of the cylindrical external surface (250-267)
+ 
+The cylinder surface is characterized by the triangles in `face1` array. The first half (1-24) is the section with internal pressure taps. The triangles 25-48 make up the section without internal pressure taps.
+
+
+```@example 2
+
+# Let's discretize the cylindrical surface
+msh1 = buildsurface(face1, # We are working on the first surface
+       		    [(points=epts1, tri=1:48, id=1:240, tag=1), # Ext. surf
+		     (points=ipts1, tri=1:24, id=250:267, tag=2), # Int surf. with int. pressure taps
+		     (tri=25:48, id=-1)]) # Int. surf. without taps
+
+# This call uses the `tag=0` and `nointid=-1` keyword arguments for internal  surface
+msh2 = buildsurface(face2, [(points=epts2, tri=1:2, id=241:249, tag=3)],
+       			      nointid=-1, tag=0)
+
+# We could have done this instead
+#msh2 = buildsurface(face2, [(points=epts2, tri=1:2, id=241:249, tag=3),
+#      			     (tri=1:2, id=-1, tag=0)])
+
+# Merging the meshes
+
+msh = mergemeshes(msh1, msh2)
+```
+
+
+Let's view the some of the faces:
+
+```@example 2
+itags = nodetag.(msh.nodes, 2) # Internal tags
+
+# We will first visualize the faces with no
+# internal pressure taps
+idx1 = itags .== 0
+
+# Now let's checkout the faces with internal pressure taps
+idx2 = .! idx1
+
+# Lets view them:
+
+let
+   fig = GLMakie.Figure()
+   ax1 = GLMakie.Axis3(fig[1,1], aspect=:data, title="No internal taps")
+   viz!(tri2mesh(msh.tri[idx1]))
+
+   ax2 = GLMakie.Axis3(fig[1,2], aspect=:data, title="Internal taps")
+   viz!(tri2mesh(msh.tri[idx2]))
+   
+   GLMakie.save("figures/building3.png", GLMakie.current_figure());
+end
+```
+
+![Faces with and without internal pressure taps](figures/building3.png)
+
+
+
+### Forces
+
+This the same same as before. Just build the force matrix. With the tags,
+you can also better locate the regions that you want the forces to be calculated.
+
+## Visualizing results
+
+The [`Makie`](https://docs.makie.org/stable/) is a very powerful package for viewing data. For now, `BuildingGeometry` is using [`Meshes.jl`](https://github.com/JuliaGeometry/Meshes.jl) for geometry stuff instead of `GeometryBasics.jl` package used by `Makie`]. As can be seen in the plotting examples above we make use of the package [`MeshViz`](https://github.com/JuliaGeometry/MeshViz.jl) to view the meshes. This package provides a bridge between `Meshes.jl` and `Makie`.
+
+As an example, let's try to plot on the mesh the function
+
+$f(x,y,z) = z \cdot \left[(R + x)^2 + 2(R+y)^2\right]$
+
+```@example 2
+
+function fun(p,R)
+   x,y,z = coordinates(p)
+   return z * ((R+x)^2 + 2*(R+y)^2)
+end
+
+u = fun.(msh.points, R)
+smsh = tri2mesh(msh.tri)
+
+data = meshdata(smsh, etable=(u=u,))
+viz(data)
+GLMakie.save("figures/building4.png", GLMakie.current_figure());
+```
+
+![Data visualization](figures/building4.png)
+
+
+### [`WriteVTK.jl`](https://github.com/jipolanco/WriteVTK.jl)
+
+
+The package [`WriteVTK.jl`](https://github.com/jipolanco/WriteVTK.jl) can be used to export data into VTK file format. With VTK data files, the results can be visualized with tools such as [Paraview](https://www.paraview.org/) or [VisIt](https://visit-dav.github.io/visit-website/index.html).
+
+
+```@index
+```

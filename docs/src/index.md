@@ -30,7 +30,10 @@ The result is a mesh of triangles that span the entire surface of the building. 
 ## Contents
 
 ```@contents
-Pages = ["install.md", "tutorial.md", "docstrings.md"]
+Pages = ["install.md",
+      	 "tutorial.md",
+	 "docstrings.md"]
+Depth=3
 ```
 
 
