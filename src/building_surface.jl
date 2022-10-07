@@ -92,7 +92,7 @@ julia> msh2 = buildsurface(cad, [(points=epts, tri=1:4, id=1:4),
 ```
 """
 function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
-                      sections::AbstractVector; nointid=-1)
+                      sections::AbstractVector; nointid=-1, tag=0)
 
     nsecs = length(sections)
 
@@ -118,21 +118,28 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
         evor, eidx = discrsurface(cad, esec.tri, esec.points)
         eid = esec.id
     end
+    if haskey(esec, :tag)
+        etag = sec.tag # Tag is specified
+    else
+        etag = tag # Use default tag
+    end
+    
     if nsecs == 1  # No internal surfaces
+        itag = tag  # Default tag
         for (i, m) in enumerate(evor)
             for (k,t) in enumerate(m)
                 An = area(t) .* normal(t)
                 tp = centroid(t)
                 push!(msh, Triangle(vertices(t)...))
-                push!(nodes, NodeInfo(An, tp, (eid[i], nointid)))
+                push!(nodes, NodeInfo(An, tp, (eid[i], nointid), (etag, itag)))
             end
         end
     else
-
+        
         Ne = length(evor)
         
         # Let's deal with internal faces
-        itri = [collect(sections[i].tri) for i in 2:nsecs]
+                      itri = [collect(sections[i].tri) for i in 2:nsecs]
         etri = esec.tri
         # There should be no overlap
         nisecs = nsecs-1
@@ -157,14 +164,21 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
                 iid = [sec.id[1]]
                 iidx = [sec.tri]
             else
-                ivor, iidx = discrsurface(cad, sec.tri, sec.points)
+                      ivor, iidx = discrsurface(cad, sec.tri, sec.points)
                 iid = sec.id
             end
+            if haskey(sec, :tag)
+                itag = sec.tag # tag is specified
+            else
+                itag = tag  # Use default value of tag
+            end
+            
+                      
             Ni = length(ivor)
             for e in 1:Ne
                 for i in 1:Ni
                     intersectmesh!(msh, nodes, eid[e], evor[e], eidx[e],
-                                   iid[i], ivor[i], iidx[i])
+                                   iid[i], ivor[i], iidx[i], etag, itag)
                 end
             end
             

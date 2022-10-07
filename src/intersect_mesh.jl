@@ -4,28 +4,29 @@
 """
 `intersectmesh(tex, iex, tin, iin)`
 
-Computes the intersection between external and internal surface  meshes. It
-should be pointed out that this function assumes that both external and internal
-meshes are overlaid on the same surface mesh.
+Computes the intersection between external and internal triangles that
+make up the surface  meshes.
+It should be pointed out that this function assumes that both external and internal meshes are overlaid on the same surface mesh.
 
-The external surface mesh is given by triangles. Each triangle has has an index
-that referes to the original triangle in the surface mesh. The internal mesh is
-similar.
+This function is limited to intersecting one external triangle with one
+internal triangle.
 
 # Arguments
  * `msh` List of triangles making up the mesh being built
  * `nodes` `NodeInfo` vector of mesh being build
  * `eid` Identifier of external pressure tap
- * `tex` Triangles corresponding to an external pressure tap
- * `triex` Index of original mesh triangle
- * `iidlst` List of identifiers of internal pressure tap
- * `tinlst` List of meshes for each internal pressure tap
- * `triin` List of indices to original mesh
+ * `emsh` Triangles corresponding to an external pressure tap
+ * `etri` Index of original mesh triangle that contains `emsh`.
+ * `iid` Id of internal pressure tap corresponding to internal triangle
+ * `imsh` Triangle of the internal side of the mesh
+ * `itri` Index of original mesh triangle that contains `imsh`
+ * `etag` Tag of the external side of the surface
+ * `itag` Tag of the internal side of the surface
 """
 function intersectmesh!(msh::AbstractVector{Tri},
                         nodes::AbstractVector{NodeInfo{3,T,Tuple{Tex,Tin}}},
                         eid::Tex, emsh, etri, iid::Tin,
-                        imsh, itri; rtol=1e-8) where {Tri,T,Tex,Tin}
+                        imsh, itri, etag=0, itag=0; rtol=1e-8) where {Tri,T,Tex,Tin}
     et = sort(unique(etri))  # Independent cad mesh triangles of the external mesh
     it = sort(unique(itri))
     icm = intersect(et, it)
@@ -57,7 +58,7 @@ function intersectmesh!(msh::AbstractVector{Tri},
                         A = area(new_tri)
                         if A > 0
                             An = A .* normal(new_tri)
-                            nn = NodeInfo(An, tp, (eid, iid))
+                            nn = NodeInfo(An, tp, (eid, iid), (etag, itag))
                             push!(msh, new_tri)
                             push!(nodes, nn)
                         end
