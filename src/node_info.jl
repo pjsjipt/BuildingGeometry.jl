@@ -20,8 +20,12 @@ struct NodeInfo{Dim,T,TSide}
     point::Point{Dim,T}
     "Information on node sides"
     side::TSide
+    "Tag identifying each side"
+    tag::Tuple{Int,Int}
 end
 
+NodeInfo(A,point,side,tag=(0,0)) = NodeInfo(A,point,side,tag)
+    
 nodearea(n::NodeInfo) = n.A
 nodepoint(n::NodeInfo) = n.point
 extnode(n::NodeInfo) = n.side[1]
