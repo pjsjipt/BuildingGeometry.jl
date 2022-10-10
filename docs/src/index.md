@@ -32,6 +32,7 @@ The result is a mesh of triangles that span the entire surface of the building. 
 ```@contents
 Pages = ["install.md",
       	 "tutorial.md",
+	 "tutorial-portugues.md",
 	 "docstrings.md"]
 Depth=3
 ```

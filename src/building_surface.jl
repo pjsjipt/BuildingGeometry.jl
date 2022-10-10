@@ -22,7 +22,7 @@ end
 
 
 """
-`buildsurface(cad, sections; nointid=-1)`
+`buildsurface(cad, sections; nointid=-1, tag=0)`
 
 Discretize a section of the surface of a building into regions of influence of external and internal pressure taps. Several common situations are possible:
 
@@ -43,7 +43,11 @@ It might have 3 fields:
 
 If no internal pressure taps are present, the vector should have a single element
 describing the external pressure taps. The `id` of the internal pressure tap will be
-given by the keyword argument `notintid`
+given by the keyword argument `notintid`.
+
+Often it is useful to assign a tag to a section of the the discretization.
+The keyword argument `tag` specifies the default tag used if during the section
+specification, a tag is not provided.
 
 If there are internal pressure taps, the internal face of the surface should be the
 same as the external surface but it might be composed of different regions. Some of
@@ -79,14 +83,14 @@ julia> # 2. Same external pressure taps and 1 internal pressure tap
 
 julia> ipts = [Point(0.5, 0.4, 0)]; # Internal pressure tap position
 
-julia> msh2 = buildsurface(cad, [(points=epts, tri=1:4, id=1:4),
-                                 (points=ipts, tri=1:4, id=5)]);
+julia> msh2 = buildsurface(cad, [(points=epts, tri=1:4, id=1:4, tag=1),
+                                 (points=ipts, tri=1:4, id=5, tag=2)]);
 
 julia> # 3. Internal press. tap on the lower half and no press. tap on the upper half
 
-julia> msh2 = buildsurface(cad, [(points=epts, tri=1:4, id=1:4),
-                                 (points=ipts, tri=1:2, id=5),
-                                 (tri=3:4, id=-1)]);
+julia> msh2 = buildsurface(cad, [(points=epts, tri=1:4, id=1:4, tag=1),
+                                 (points=ipts, tri=1:2, id=5, tag=2),
+                                 (tri=3:4, id=-1)]); # tag = 0
 
 
 ```

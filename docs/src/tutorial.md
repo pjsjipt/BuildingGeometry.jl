@@ -43,7 +43,7 @@ for i in 2:nθ-1
 end
 ```
 
-To plot the meshes, there is the function [`tri2mesh`](@ref) that converts the vector of triangles into a `Meshes.SimpleMesh` that can be visualized with the package [`MeshViz,jl`](https://github.com/JuliaGeometry/MeshViz.jl)
+To plot the meshes, there is the function [`tri2mesh`](@ref) that converts the vector of triangles into a `Meshes.SimpleMesh` that can be visualized with the package [`MeshViz,jl`](https://github.com/JuliaGeometry/MeshViz.jl).
 
 ```@example 1
 using MeshViz
@@ -53,7 +53,7 @@ viz(tri2mesh(trilst));
 GLMakie.save("figures/cigarbuilding1.png", GLMakie.current_figure());
 ```
 
-![Prédio cilindrico](figures/cigarbuilding1.png)
+![Cylindrical building](figures/cigarbuilding1.png)
 
 
 Now, the vector `trilst` contains the only face in the geometry.
@@ -82,7 +82,7 @@ viz!(tri2mesh(trilst), color=:gray, alpha=0.3);
 GLMakie.save("figures/cigarbuilding2.png", GLMakie.current_figure());
 ```
 
-![Prédio cilindrico com tomadas](figures/cigarbuilding2.png)
+![Cylindrical building with pressure taps](figures/cigarbuilding2.png)
 
 ### Discretizing the building
 
@@ -92,7 +92,7 @@ we can discretize the building into regions of influence of each pressure tap. T
 The discretization is done using the function [`buildsurface`](@ref). This function has three arguments:
 
  1. The geometry of the surface, a vector of triangles
- 2. Definition pressure tap positions on different sections of the face. Each section is an element of a vector with a named tuple that has the coordinates of each pressure tap on the section, the index (of the geometry defined in the first argument) that make up the section) and the id of each pressure tap.
+ 2. Definition pressure tap positions on different sections of the face. Each section is an element of a vector with a named tuple that has the coordinates of each pressure tap on the section (field `points`), the index (of the geometry defined in the first argument) that make up the section) and the id of each pressure tap.
  3. The keyword argument specifying the id used for regions that don't have an internal pressure tap.
 
 The function returns a [`BuildingSurface`](@ref) object. This object has an array of triangles that make up the surface, an array of points specifying the coordinates of each triangle (today this is the centroid of each triangle) and an array of [`NodeInfo`](@ref) objects.
