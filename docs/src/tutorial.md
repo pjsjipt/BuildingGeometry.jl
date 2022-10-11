@@ -89,11 +89,13 @@ GLMakie.save("figures/cigarbuilding2.png", GLMakie.current_figure());
 Now that we have the geometry of the building and the position of the pressure tap,
 we can discretize the building into regions of influence of each pressure tap. The idea here is to split the surface into triangles with each triangle having two sides. The external side (side 1) and the internal side. Each side will reference the pressure acting on it. In the simplest case, it referes to the index of the pressure tap. Since this is actually a parametric type, it could also be an set of indices of pressure taps and respective weights to compute a weighed average. For now only the simplest case is implemented.
 
-The discretization is done using the function [`buildsurface`](@ref). This function has three arguments:
+The discretization is done using the function [`buildsurface`](@ref). This function has two arguments:
 
  1. The geometry of the surface, a vector of triangles
- 2. Definition pressure tap positions on different sections of the face. Each section is an element of a vector with a named tuple that has the coordinates of each pressure tap on the section (field `points`), the index (of the geometry defined in the first argument) that make up the section) and the id of each pressure tap.
- 3. The keyword argument specifying the id used for regions that don't have an internal pressure tap.
+ 2. Definition pressure tap positions on different sections of the face. The first section refers to the external face of the surface. Each section is an element of a vector with a named tuple that has the coordinates of each pressure tap on the section (field `points`), the index (of the geometry defined in the first argument) that make up the section) and the id of each pressure tap.  If the `id` field is not provided, it uses the value stored in the `nointid` keyword argument. It also has a `tag` field that adds an identifying tag to the section. If not provided, it uses the defult value in keyword argument `tag`.
+
+Default values for `tag` and `id` is provided in the `tag` and `nointid` keyword arguments.
+
 
 The function returns a [`BuildingSurface`](@ref) object. This object has an array of triangles that make up the surface, an array of points specifying the coordinates of each triangle (today this is the centroid of each triangle) and an array of [`NodeInfo`](@ref) objects.
 

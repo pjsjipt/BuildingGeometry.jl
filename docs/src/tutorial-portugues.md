@@ -89,7 +89,7 @@ Agora que temos a geometria do edifício e as posições das tomadas de pressão
 
 A discretização é feita usando a função [`buildsurface`](@ref). Esta função tem dois argumentos:
 
- 1. A geometria da superfície
- 2. Definição da posição das tomadas de pressão em cada face. Cada seção é um elemento de um vetor com as coordenadas da tomada de pressão (campo `points`), 
+ 1. A geometria da superfície (argumento `cad`)
+ 2. Definição da posição das tomadas de pressão em cada seção da face. A primeir seção é necessariamente a a face externa da superfície. Cada seção é um elemento de um vetor com as coordenadas da tomada de pressão (campo `points`), os índices dos triângulos que fazem formam a seção.
 
 
