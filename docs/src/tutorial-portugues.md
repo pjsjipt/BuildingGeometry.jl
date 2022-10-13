@@ -181,7 +181,7 @@ O primeiro argumento é o número de colunas que corresponde ao número de tomad
 
 ```@example 3
 # Lembre-se: tempos 240 tomadas de pressão!
-Fbase = forcematrix(240, msh, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
+Fbase = forcematrix(240, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
 println("Dimensões de `Fbase`: $(size(Fbase))")
 ```
 
@@ -201,8 +201,8 @@ Normalmente o calculista deseja a distribuição de carga ao longo da estrutura.
 
 
 ```@example 3
-
-Fslices = forcematrix(240, slices, (1,2,6); sgn=1, side=1, point=Point(0,0,0))
+sl_nodes = [sl.nodes for sl in slices]
+Fslices = forcematrix(240, sl_nodes, (1,2,6); sgn=1, side=1, point=Point(0,0,0))
 println("Dimensions of `Fslices`: $(size(Fslices))")
 ```
 
@@ -397,10 +397,11 @@ calcular as forças. Neste exemplo devemos lembrar das faces internas.
 
 ```@example 4
 # Lembre-se, temos 267 tomadas de pressão!
-Fbase = forcematrix(267, msh, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
+Fbase = forcematrix(267, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
 
-# Adicionar a contribuição das tomadas de pressão internas
-addforcecontrib!(Fbase, msh, (1,2,3,4,5,6); sgn=-1, side=2, point=Point(0,0,0))
+# Adicionar a contribuição das tomadas de pressão internas - tag=2
+ii = nodetag.(msh.nodes, 2) .== 2 # Selecionando os nós com tag interna 2
+addforcecontrib!(Fbase, msh.nodes[ii], (1,2,3,4,5,6); sgn=-1, side=2, point=Point(0,0,0))
 
 println("Dimensões de `Fbase`: $(size(Fbase))")
 ```
@@ -438,6 +439,3 @@ GLMakie.save("figures/building4.png", GLMakie.current_figure());
 
 O pacote [`WriteVTK.jl`](https://github.com/jipolanco/WriteVTK.jl) permite exportar resultados no formato VTK. Com arquivos neste formato, os resultados podem ser visualizados com ferramentas como  [Paraview](https://www.paraview.org/) ou [VisIt](https://visit-dav.github.io/visit-website/index.html).
 
-
-```@index
-```

@@ -37,7 +37,7 @@ let
     @test all(Ai .≈ 1/Ni)
 
     Fe = zeros(6,10)
-    addforcecontrib!(Fe, m, (1,2,3,4,5,6); sgn=1, side=1)
+    addforcecontrib!(Fe, m.nodes, (1,2,3,4,5,6); sgn=1, side=1)
 
     @test all(Fe[1,:] .≈ 0)  # No forces in x
     @test all(Fe[2,:] .≈ 0)  # No forces in y
@@ -51,7 +51,7 @@ let
 
  
     Fi = zeros(6,10)
-    addforcecontrib!(Fi, m, (1,2,3,4,5,6); sgn=1, side=2)
+    addforcecontrib!(Fi, m.nodes, (1,2,3,4,5,6); sgn=1, side=2)
     @test all(Fi[1,:] .≈ 0)  # No forces in x
     @test all(Fi[2,:] .≈ 0)  # No forces in y
     @test all(Fi[3,Ne .+ (1:Ni)] .≈ -1/Ni)
@@ -74,7 +74,7 @@ let
                            (points=ipts,tri=1:2, id=Ne .+ (1:Ni))])
 
     Fe = zeros(6,10)
-    addforcecontrib!(Fe, m, (1,2,3,4,5,6); sgn=1, side=1)
+    addforcecontrib!(Fe, m.nodes, (1,2,3,4,5,6); sgn=1, side=1)
 
     @test all(Fe[1,1:Ne] .≈ 0)  # No forces in x
     @test all(Fe[2,1:Ne] .≈ +1/Ne)  # No forces in y
@@ -86,7 +86,7 @@ let
     @test all(Fe[6,1:Ne] .≈ +x * Ae) 
    
     Fi = zeros(6,10)
-    addforcecontrib!(Fi, m, (1,2,3,4,5,6); sgn=1, side=2)
+    addforcecontrib!(Fi, m.nodes, (1,2,3,4,5,6); sgn=1, side=2)
      
     @test all(Fi[1,Ne .+ (1:Ni)] .≈ 0)  # No forces in x
     @test all(Fi[2,Ne .+ (1:Ni)] .≈ [+0.5, +0.5])  # 
@@ -190,8 +190,8 @@ let
     @test sum(A.≈16) == 32*2
 
     # Agora, vamos trabalhar com as forças
-    MF1 = forcematrix(Nt, bmsh, (1,2,3,4,5,6); sgn=1, side=1) 
-    MF2 = forcematrix(Nt, bmsh, (1,2,3,4,5,6); sgn=1, side=2)
+    MF1 = forcematrix(Nt, bmsh.nodes, (1,2,3,4,5,6); sgn=1, side=1) 
+    MF2 = forcematrix(Nt, bmsh.nodes, (1,2,3,4,5,6); sgn=1, side=2)
     @test all(MF1[:,Ne .+ (1:Ni)] .== 0)  # Internal nodes should not contribute
     @test all(MF2[:,1:Ne] .== 0) # External nodes should not contribute
     # For constant pressure, all forces should add up to zero
@@ -229,8 +229,9 @@ let
 
     # Let's try to do the samething for slices.
     # We will calculate for each slice and rebuild the MF1 and MF2 matrices
-    SF1 = forcematrix(Nt, floors, (1,2,3,4,5,6), side=1)
-    SF2 = forcematrix(Nt, floors, (1,2,3,4,5,6), side=2)
+    fl_slices = [fl.nodes for fl in floors]
+    SF1 = forcematrix(Nt, fl_slices, (1,2,3,4,5,6), side=1)
+    SF2 = forcematrix(Nt, fl_slices, (1,2,3,4,5,6), side=2)
     kf = [(1:4) .+ i for i in 0:4:23 ]
     SF1i = vcat([sum(SF1[k,:],dims=1) for k in kf]...)
     SF2i = vcat([sum(SF2[k,:],dims=1) for k in kf]...)
@@ -241,8 +242,8 @@ let
     @test SF1[14,3] ≈ -16*6
     
     
-    SF1 = forcematrix(Nt, floors, (1,2,3,4,5,6), side=1, interleaved=true)
-    SF2 = forcematrix(Nt, floors, (1,2,3,4,5,6), side=2, interleaved=true)
+    SF1 = forcematrix(Nt, fl_slices, (1,2,3,4,5,6), side=1, interleaved=true)
+    SF2 = forcematrix(Nt, fl_slices, (1,2,3,4,5,6), side=2, interleaved=true)
     kf = [(1:6:24) .+ i for i in 0:5 ]
     SF1i = vcat([sum(SF1[k,:],dims=1) for k in kf]...)
     SF2i = vcat([sum(SF2[k,:],dims=1) for k in kf]...)

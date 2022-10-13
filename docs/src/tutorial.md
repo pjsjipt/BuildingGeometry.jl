@@ -171,7 +171,7 @@ The $\left[F_{matrix}\right] matrix is sparse. The number of rows is the number 
 
 ```@example 1
 # Remember we have 240 pressure taps!
-Fbase = forcematrix(240, msh, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
+Fbase = forcematrix(240, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
 println("Dimensions of `Fbase`: $(size(Fbase))")
 ```
 
@@ -202,8 +202,8 @@ In this case, the force matrix, when applied to the pressure measurements calcul
 
 
 ```@example 1
-
-Fslices = forcematrix(240, slices, (1,2,6); sgn=1, side=1, point=Point(0,0,0))
+sl_nodes = [sl.nodes for sl in slices]
+Fslices = forcematrix(240, sl_nodes, (1,2,6); sgn=1, side=1, point=Point(0,0,0))
 println("Dimensions of `Fslices`: $(size(Fslices))")
 ```
 
@@ -403,10 +403,11 @@ In this case we should also add the internal faces contributions
 
 ```@example 2
 # Remember we have 267 pressure taps!
-Fbase = forcematrix(267, msh, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
+Fbase = forcematrix(267, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
 
 # Adding internal contribution
-addforcecontrib!(Fbase, msh, (1,2,3,4,5,6); sgn=-1, side=2, point=Point(0,0,0))
+ii = nodetag.(msh.nodes, 2) .== 2 # Selecionando os nós com tag interna 2
+addforcecontrib!(Fbase, msh.nodes[ii], (1,2,3,4,5,6); sgn=-1, side=2, point=Point(0,0,0))
 
 println("Dimensions of `Fbase`: $(size(Fbase))")
 ```
@@ -442,6 +443,3 @@ GLMakie.save("figures/building4.png", GLMakie.current_figure());
 
 The package [`WriteVTK.jl`](https://github.com/jipolanco/WriteVTK.jl) can be used to export data into VTK file format. With VTK data files, the results can be visualized with tools such as [Paraview](https://www.paraview.org/) or [VisIt](https://visit-dav.github.io/visit-website/index.html).
 
-
-```@index
-```
