@@ -398,10 +398,22 @@ end
 
 This the same same as before. Just build the force matrix. With the tags,
 you can also better locate the regions that you want the forces to be calculated.
+In this case we should also add the internal faces contributions
+
+
+```@example 2
+# Remember we have 267 pressure taps!
+Fbase = forcematrix(267, msh, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
+
+# Adding internal contribution
+addforcecontrib!(Fbase, msh, (1,2,3,4,5,6); sgn=-1, side=2, point=Point(0,0,0))
+
+println("Dimensions of `Fbase`: $(size(Fbase))")
+```
 
 ## Visualizing results
 
-The [`Makie`](https://docs.makie.org/stable/) is a very powerful package for viewing data. For now, `BuildingGeometry` is using [`Meshes.jl`](https://github.com/JuliaGeometry/Meshes.jl) for geometry stuff instead of `GeometryBasics.jl` package used by `Makie`]. As can be seen in the plotting examples above we make use of the package [`MeshViz`](https://github.com/JuliaGeometry/MeshViz.jl) to view the meshes. This package provides a bridge between `Meshes.jl` and `Makie`.
+The [`Makie`](https://docs.makie.org/stable/) is a very powerful package for viewing data. For now, `BuildingGeometry` is using [`Meshes.jl`](https://github.com/JuliaGeometry/Meshes.jl) for geometry stuff instead of `GeometryBasics.jl` package used by `Makie`. As can be seen in the plotting examples above we make use of the package [`MeshViz`](https://github.com/JuliaGeometry/MeshViz.jl) to view the meshes. This package provides a bridge between `Meshes.jl` and `Makie`.
 
 As an example, let's try to plot on the mesh the function
 
