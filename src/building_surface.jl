@@ -1,7 +1,7 @@
 
 import StaticArrays: SVector
-import Meshes: connect, SimpleMesh
-
+import Meshes: connect, SimpleMesh, vertices, coordinates
+import DelimitedFiles: writedlm, readdlm
 """
 `BuildingSurface(tri, points, nodes)`
 
@@ -19,7 +19,67 @@ struct BuildingSurface{T,Tex,Tin}
     nodes::Vector{NodeInfo{3,T,Tuple{Tex,Tin}}}
 end
 
+"""
+`savebsurf(fname, msh)`
 
+Save a [`BuildingSurface`](@ref) into a delimited file
+"""
+function savebsurf(fname, msh::BuildingSurface{T,I,I}, delim='\t') where {T,I<:Integer}
+
+    ntri = length(msh.tri)
+    tab = zeros(ntri, 13) # Vertices (9), side (2) and tag (2)
+    for i in 1:ntri
+        v1,v2,v3 = vertices(msh.tri[i])
+        x1,y1,z1 = coordinates(v1)
+        x2,y2,z2 = coordinates(v2)
+        x3,y3,z3 = coordinates(v3)
+        s1,s2 = nodeside(msh.nodes[i])
+        t1, t2 = nodetag(msh.nodes[i])
+
+        tab[i,:] .= [x1,y1,z1,x2,y2,z2,x3,y3,z3,s1,s2,t1,t2]
+    end
+    
+    writedlm(fname, tab, delim)
+    return
+end
+
+function loadbsurf(fname, delim='\t')
+    tab = readdlm(fname, delim, Float64)
+    if size(tab,2) != 13
+        error("Wrong number of columns when reading BuildingSurface object. Should be 13!")
+    end
+    TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
+    tri = TriFace[]
+    points = Point{3,Float64}[]
+    nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
+
+    for i in 1:size(tab,1)
+        p1 = Point(tab[i,1], tab[i,2], tab[i,3])
+        p2 = Point(tab[i,4], tab[i,5], tab[i,6])
+        p3 = Point(tab[i,7], tab[i,8], tab[i,9])
+
+        s1 = round(Int, tab[i,10])
+        s2 = round(Int, tab[i,11])
+        t1 = round(Int, tab[i,12])
+        t2 = round(Int, tab[i,13])
+
+        t = TriFace(p1,p2,p3)
+        p = centroid(t)
+        A = area(t) * normal(t)
+
+        node = NodeInfo(A, p, (s1, s2), (t1, t2))
+        push!(tri, t)
+        push!(points, p)
+        push!(nodes, node)
+                                 
+    end
+    
+    return BuildingSurface(tri, points, nodes)
+    
+end
+
+
+    
 
 """
 `buildsurface(cad, sections; nointid=-1, tag=0)`

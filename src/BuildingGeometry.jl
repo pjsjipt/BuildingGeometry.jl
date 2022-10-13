@@ -20,7 +20,7 @@ export poly2mesh, measure, volume, nfacets, boundingbox
 export ConvexPolyhedron
 export cut_with_plane, chopwithpolyhedron, slicemesh, intersectmesh!, intersect_tri
 export NodeInfo, nodearea, nodepoint, nodeside, nodetag
-export BuildingSurface, buildsurface, buildingslice, mergemeshes
+export BuildingSurface, savebsurf, loadbsurf, buildsurface, buildingslice, mergemeshes
 export readraw,tri2mesh
 export addforcecontrib!, forcematrix
 export reescalemesh, translatemesh, rotatemesh
