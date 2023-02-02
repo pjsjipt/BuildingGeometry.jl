@@ -106,7 +106,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
         end
         
         if nvin == 3 # The triangle is completely inside the polyhedron
-            return TT[Triangle(vertices(tri)...)]
+            return [TT(vertices(tri)...)]
         end
     end
     # Here is the tricky part.
@@ -131,7 +131,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
         pts = cut_with_plane(pts, p0, n, atol=atol)
     end
     if length(pts) > 2
-        return TT[Triangle(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
+        return [TT(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
     else
         return TT[]
     end
