@@ -194,7 +194,7 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
             for (k,t) in enumerate(m)
                 An = area(t) .* normal(t)
                 tp = centroid(t)
-                push!(msh, Triangle(vertices(t)...))
+                push!(msh, TriFace(vertices(t)...))
                 push!(nodes, NodeInfo(An, tp, (eid[i], nointid), (etag, itag)))
             end
         end
