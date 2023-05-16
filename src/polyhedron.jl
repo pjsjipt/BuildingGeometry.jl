@@ -185,7 +185,7 @@ polyheron into.
 """
 function poly2mesh(poly::ConvexPolyhedron)
 
-    nf = numfaces(poly)
+    nf = nfacets(poly)
     ntri = sum(length.(poly.faces)) - 2*nf
     conn = zeros(Int, ntri, 3)
 
@@ -199,6 +199,7 @@ function poly2mesh(poly::ConvexPolyhedron)
         end
     end
 
+    
     return poly.vertices, conn
                                
 end
