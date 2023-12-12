@@ -2,9 +2,9 @@
 
 
 
-struct ConvexPolygon{Dim,T,C<:Chain{Dim,T}} <: Polygon{Dim,T}
-    contour::C
-    function ConvexPolygon{Dim,T,C}(contour) where {Dim,T,C}
+struct ConvexPolygon{Dim,T,R<:Ring{Dim,T}} <: Polygon{Dim,T}
+    contour::R
+    function ConvexPolygon{Dim,T,R}(contour) where {Dim,T,R}
         @assert isclosed(contour)
         new(contour)
     end
@@ -19,8 +19,8 @@ Create a convex polygon.
 
 
 """
-ConvexPolygon(contour::C) where {Dim,T,V,C<:Chain{Dim,T,V}} =
-    ConvexPolygon{Dim,T,Chain{Dim,T,V}}(contour)
+ConvexPolygon(contour::R) where {Dim,T,V,R<:Ring{Dim,T,V}} =
+    ConvexPolygon{Dim,T,Ring{Dim,T,V}}(contour)
 
 
 ConvexPolygon(x::AbstractVector, y::AbstractVector) =
@@ -30,7 +30,7 @@ ConvexPolygon(x::AbstractVector, y::AbstractVector, z::AbstractVector) =
     ConvexPolygon([Point3(xx, yy,zz) for (xx,yy,zz) in zip(x,y,z)])
 
 function ConvexPolygon(pts::AbstractVector{P}) where {P<:Point}
-    ConvexPolygon(Chain(pts))
+    ConvexPolygon(Ring(pts))
 end
 
 ConvexPolygon(pts::AbstractVector{TP}) where {TP<:Tuple} = ConvexPolygon(Point.(pts))
@@ -88,7 +88,7 @@ function pnpoly(poly::ConvexPolygon{2}, p::Point{2})
     
 end
 
-Base.in(pt, p::ConvexPolygon) = pnpoly(p, pt)
+Base.in(pt::Point, p::ConvexPolygon) = pnpoly(p, pt)
 
 
     

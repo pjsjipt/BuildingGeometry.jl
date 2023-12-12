@@ -1,6 +1,6 @@
 
 export voronoi3d,  makebbox, VoronoiMesh
-export getpoint, getvertex
+export getpoint, getvertex, npoints
 
 
 function bboxaux!(xlims, p)
@@ -236,7 +236,7 @@ end
 vertices(v::VoronoiMesh) = v.vertices
 nvertices(v::VoronoiMesh) = length(v.vertices)
 
-import Meshes.npoints
+
 npoints(v::VoronoiMesh) = length(points)
 
 points(v::VoronoiMesh) = v.points

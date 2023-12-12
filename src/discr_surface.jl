@@ -26,7 +26,7 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
                       pts::AbstractVector{Point{3,Float64}};
                       rtol=1e-8, bbox=nothing, nd=8)
 
-    TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
+    TriFace = Triangle{3,Float64}
     
     ntri = length(tri)
     npts = length(pts)
@@ -99,7 +99,7 @@ account. There is a method for slicing `nslices` from `pa` to `pb`.
 """
 function slicemesh(m::AbstractVector{P},
                    p::AbstractVector{Point{3,T}}; rtol=1e-8) where {P,T}
-    TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
+    TriFace = Triangle{3,Float64}
     mshlst = Vector{TriFace}[]
     mshidx = Vector{Int}[]
     # We will analyze each slice
@@ -126,7 +126,7 @@ function slicemesh(m::AbstractVector{P},
             # Generate triangles:
             npts = length(pts)
             for i in 2:npts-1
-                push!(mshi, TriFace(pts[1], pts[i], pts[i+1]))
+                push!(mshi, Triangle(pts[1], pts[i], pts[i+1]))
                 push!(idx, k)
             end
         end

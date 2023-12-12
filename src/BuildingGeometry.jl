@@ -10,7 +10,7 @@ function __init__()
 end
 
 import Meshes  
-import Meshes: Point, area, centroid, normal, coordinates, Chain, vertices, Polygon
+import Meshes: Point, area, centroid, normal, coordinates, Ring, vertices, Polygon
 import Meshes: Point2, Point3, nvertices, Vec, isclosed, measure, Triangle, Box
 import Meshes: Polyhedron, measure, volume, Point, nvertices, vertices, nfacets
 import Meshes: boundingbox

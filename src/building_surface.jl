@@ -14,7 +14,7 @@ normal to the surface, the outside pressure tap, inside pressure tap and area.
 
 """
 struct BuildingSurface{T,Tex,Tin}
-    tri::Vector{Triangle{3,T,SVector{3,Point{3,T}}}}
+    tri::Vector{Triangle{3,T}}
     points::Vector{Point{3,T}}
     nodes::Vector{NodeInfo{3,T,Tuple{Tex,Tin}}}
 end
@@ -160,7 +160,7 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
 
     nsecs = length(sections)
 
-    TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
+    TriFace = Triangle{3,Float64}
     msh = TriFace[]
     nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
     # The first section should specify the external side
@@ -194,7 +194,7 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
             for (k,t) in enumerate(m)
                 An = area(t) .* normal(t)
                 tp = centroid(t)
-                push!(msh, TriFace(vertices(t)...))
+                push!(msh, Triangle(vertices(t)...))
                 push!(nodes, NodeInfo(An, tp, (eid[i], nointid), (etag, itag)))
             end
         end

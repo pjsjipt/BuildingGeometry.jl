@@ -8,7 +8,7 @@ let
 
     faces = [[1,2,6,5], [2,4,8,6], [4,3,7,8], [1,5,7,3], [1,3,4,2], [5,6,8,7]]
     pp = ConvexPolyhedron(pts, faces)
-    pf = [ConvexPolygon(pts[[ff;ff[1]]]) for ff in faces]
+    pf = [ConvexPolygon(pts[ff]) for ff in faces]
 
     @test nfacets(pp) == 6
     @test nvertices(pp) == 8
@@ -46,7 +46,7 @@ let
 
     faces = [[1,2,6,5], [2,4,8,6], [4,3,7,8], [1,5,7,3], [1,3,4,2], [5,6,8,7]]
     pp = ConvexPolyhedron(pts, faces)
-    pf = [ConvexPolygon(pts[[ff;ff[1]]]) for ff in faces]
+    pf = [ConvexPolygon(pts[ff]) for ff in faces]
 
     
     @test area(pp[1]) == 4.0

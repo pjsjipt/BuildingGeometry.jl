@@ -14,10 +14,9 @@ and the plane will be added.
 This function is used throughout this package for many types of operations.
 
 """
-function cut_with_plane(pts::AbstractVector{Point{3,T}},
-                        p0, n, circ=true; atol=1e-8) where{T}
+function cut_with_plane(pts::Union{AbstractVector{Point{3,T}},NTuple{N,Point{3,T}}},
+                        p0, n, circ=true; atol=1e-8) where{T,N}
 
-    
     npts = length(pts)
     out = Point{3,T}[]
     if length(pts) < 1
@@ -87,7 +86,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
                             atol=1e-8) where {T}
     
     # First we will check if there is any chance of intersection
-    TT = Triangle{3,T,SVector{3,Point{3,T}}}
+    TT = Triangle{3,T}
     let
         pmin,pmax = coordinates.(extrema(boundingbox(poly)))
         tmin,tmax = coordinates.(extrema(boundingbox(tri)))
@@ -106,7 +105,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
         end
         
         if nvin == 3 # The triangle is completely inside the polyhedron
-            return [TT(vertices(tri)...)]
+            return [Triangle(vertices(tri)...)]
         end
     end
     # Here is the tricky part.
@@ -131,7 +130,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
         pts = cut_with_plane(pts, p0, n, atol=atol)
     end
     if length(pts) > 2
-        return [TT(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
+        return [Triangle(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
     else
         return TT[]
     end

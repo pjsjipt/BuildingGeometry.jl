@@ -102,7 +102,7 @@ let
 
 
     #===================================================================
-    # Testin mesh intersection
+    # Testing mesh intersection
     ====================================================================#
 
     pts = Point.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
@@ -112,7 +112,7 @@ let
     ptsi = Point.([(-0.6,0.0,0.0), (0.6,0.0,0.0)])
     ivor, iidx = discrsurface(tri, 1:2, ptsi)
     
-    TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
+    TriFace = Triangle{3,Float64}
 
     msh = TriFace[]
     nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
@@ -157,7 +157,7 @@ let
     evor, eidx = discrsurface(tri, 1:2, epts)
     ivor, iidx = discrsurface(tri, 1:2, ipts)
 
-    TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
+    TriFace = Triangle{3,Float64}
 
     msh = TriFace[]
     nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
