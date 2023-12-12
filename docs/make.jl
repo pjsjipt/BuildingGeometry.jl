@@ -1,5 +1,8 @@
-using BuildingGeometry
+using WGLMakie
+using JSServe
+Page(exportable=true, offline=true)
 using Meshes
+using BuildingGeometry
 using Documenter
 
 DocMeta.setdocmeta!(BuildingGeometry, :DocTestSetup, :(using BuildingGeometry); recursive=true)

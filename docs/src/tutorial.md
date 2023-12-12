@@ -19,9 +19,15 @@ The geometry of th building required by `BuildingGeometry` is a set of faces com
 
 ### Defining the geometry of the building
 
-```@example 1
+```@setup 1
+import GLMakie
+import GLMakie: current_figure
 using Meshes
 using BuildingGeometry
+using Colors
+``` 
+
+```@example 1
 
 H = 150.0 # Height
 D = 30.0  # Diameter
@@ -46,14 +52,10 @@ end
 To plot the meshes, there is the function [`tri2mesh`](@ref) that converts the vector of triangles into a `Meshes.SimpleMesh` that can be visualized with the package [`MeshViz,jl`](https://github.com/JuliaGeometry/MeshViz.jl).
 
 ```@example 1
-using MeshViz
-using Colors
-import GLMakie
-viz(tri2mesh(trilst));
-GLMakie.save("figures/cigarbuilding1.png", GLMakie.current_figure());
-```
 
-![Cylindrical building](figures/cigarbuilding1.png)
+viz(tri2mesh(trilst));
+current_figure()
+```
 
 
 Now, the vector `trilst` contains the only face in the geometry.
@@ -79,10 +81,8 @@ end
 
 viz(epts, color=:red);
 viz!(tri2mesh(trilst), color=:gray, alpha=0.3);
-GLMakie.save("figures/cigarbuilding2.png", GLMakie.current_figure());
+current_figure()
 ```
-
-![Cylindrical building with pressure taps](figures/cigarbuilding2.png)
 
 ### Discretizing the building
 
@@ -118,11 +118,8 @@ cc = distinguishable_colors(240)  # One color for each pressure tap
 viz(epts)
 ie = nodeside.(msh.nodes, 1)  # Getting the external pressure tap for each triangle
 viz!(tri2mesh(msh.tri), color=cc[ie])
-GLMakie.save("figures/cigarbuilding3.png", GLMakie.current_figure());
+current_figure()
 ```
-
-![Influence regions of each pressure tap](figures/cigarbuilding3.png)
-
 
 ### Slicing the building
 
@@ -139,10 +136,8 @@ for i in firstindex(slices):2:lastindex(slices)
     ie1 = nodeside.(slices[i].nodes, 1)
     viz!(tri2mesh(slices[i].tri), color=cc[ie1])
 end
-GLMakie.save("figures/cigarbuilding4.png", GLMakie.current_figure());
+current_figure()
 ```
-
-![Every other slice](figures/cigarbuilding4.png)
 
 
 ### Computing the forces
@@ -151,23 +146,23 @@ With the building discretized into triangles and with each triangle having infor
 
 Given a pressure distribution, the force acting on one side of the surface is given by
 
-$\vec{F} = -\int_S p \:d\vec{A}$
+``\vec{F} = -\int_S p \:d\vec{A}``
 
 The moment is calculated by
 
-$\vec{M} = -\int_S p \vec{r}\times d\vec{A}$
+`` \vec{M} = -\int_S p \vec{r}\times d\vec{A} ``
 
 Using the discretization obtained above,
 
-$\vec{F} = -\sum_{i=1}^{N_{taps}} p_i \cdot \vec{A}_i$
+``\vec{F} = -\sum_{i=1}^{N_{taps}} p_i \cdot \vec{A}_i``
 
-$\vec{M} = -\sum_{i=1}^{N_{taps}} p_i \cdot \vec{r_i} \times \vec{A}_i$
+``\vec{M} = -\sum_{i=1}^{N_{taps}} p_i \cdot \vec{r_i} \times \vec{A}_i``
 
 Notice that given a vector with every pressure measurement, the operations above can be represented as a matrix multiplication.
 
-$\left\{\begin{matrix}F_x\\F_y\\F_z\\M_x\\M_y\\_Mz\end{matrix}\right\} = \left[ F_{matrix} \right] \cdot \left\{\begin{matrix}p_1\\p_2\\p_3\\\vdots\\p_{N_{taps}}\end{matrix}\right\}$
+``\left\{\begin{matrix}F_x\\F_y\\F_z\\M_x\\M_y\\_Mz\end{matrix}\right\} = \left[ F_{matrix} \right] \cdot \left\{\begin{matrix}p_1\\p_2\\p_3\\\vdots\\p_{N_{taps}}\end{matrix}\right\}``
 
-The $\left[F_{matrix}\right] matrix is sparse. The number of rows is the number of triangles (or nodes in more general cases) and the number of columns is the number of pressure taps. To compute this matrix for a discretized surface, use the [`addforcecontrib!`](@ref) method or [`forcematrix`](@ref). The `forcematrix` method allocates memory for the matrix and calls `addforcecontrib!` method. The methods are defined in this way because there might be contributions from both sides of the surface and each contribution should be added independently to result in the full force matrix.
+The `` \left[F_{matrix}\right] `` matrix is sparse. The number of rows is the number of triangles (or nodes in more general cases) and the number of columns is the number of pressure taps. To compute this matrix for a discretized surface, use the [`addforcecontrib!`](@ref) method or [`forcematrix`](@ref). The `forcematrix` method allocates memory for the matrix and calls `addforcecontrib!` method. The methods are defined in this way because there might be contributions from both sides of the surface and each contribution should be added independently to result in the full force matrix.
 
 ```@example 1
 # Remember we have 240 pressure taps!
@@ -177,12 +172,12 @@ println("Dimensions of `Fbase`: $(size(Fbase))")
 
 The first parameter is the number of columns. This is actually the number of pressure taps  used. The second parameter is the mesh. The third parameter specifies which components of the force should be calculated:
 
- 1. $F_x$
- 2. $F_y$
- 3. $F_z$
- 4. $M_x$
- 5. $M_y$
- 6. $M_z$
+ 1. ``F_x``
+ 2. ``F_y``
+ 3. ``F_z``
+ 4. ``M_x``
+ 5. ``M_y``
+ 6. ``M_z``
 
 The keyword argument `sgn` multiplies each matrix element. In the case of internal pressure, usually this argument is -1. But it can also account for scaling factors or different reference wind velocity. The `side` keyword argument specifies which side of the face is contributing to a force. In a more general case, `forcematrix` would be called sith `sgn=1` and `side=1` then `addforcecontrib!` would be called with `sgn=-1` and `side=2`. Since we only have external pressure taps, in the example above, `sgn=1` and `side=1`.
 
@@ -197,8 +192,8 @@ Usually the structure designer wants a load distribution. For instance on a tall
 
 In this case, the force matrix, when applied to the pressure measurements calculates the forces on each mesh. The `interleaved` keyword argument specifies how the forces are numbered in sequence:
 
- * `interleaved=false`: the each component of the force is numbered in sequence. For example if the argument `forces=(1,2,6)` the order of the forces is $F_{x,1}$, $F_{x,2}$, $\ldots$, $F_{x,N}$, $F_{y,1}$, $F_{y,2}$, $\ldots$, $F_{y,N}$, $M_{z,1}$, $M_{z,1}$, $\ldots$, $M_{z,N}$ where $N$ is the number of floors.
- * `interleaved=false`: The forces are numbered per floor (or mesh), $F_{x,1}$, $F_{y,1}$, $M_{z,1}$, $F_{x,2}$, $F_{y,2}$, $M_{z,2}$, $\ldots$, $F_{x,N}$, $F_{y,N}$, $M_{z,N}$.
+ * `interleaved=false`: the each component of the force is numbered in sequence. For example if the argument `forces=(1,2,6)` the order of the forces is ``F_{x,1}``, ``F_{x,2}``, ``\ldots``, ``F_{x,N}``, ``F_{y,1}``, ``F_{y,2}``, ``\ldots``, ``F_{y,N}``, ``M_{z,1}``, ``M_{z,1}``, ``\ldots``, ``M_{z,N}`` where ``N`` is the number of floors.
+ * `interleaved=false`: The forces are numbered per floor (or mesh), ``F_{x,1}``, ``F_{y,1}``, ``M_{z,1}``, ``F_{x,2}``, ``F_{y,2}``, ``M_{z,2}``, ``\ldots``, ``F_{x,N}``, ``F_{y,N}``, ``M_{z,N}``.
 
 
 ```@example 1
@@ -224,11 +219,14 @@ This model has two surfaces:
 
 We will start out with the original geometry of the cicrcular building.
 
-```@example 2
-using Meshes, MeshViz
+```@setup 2
 import GLMakie
+import GLMakie: current_figure
+using Meshes
 using BuildingGeometry
+``` 
 
+```@example 2
 H = 150.0 # Height
 D = 30.0  # Diameter
 R = D/2   # Radius
@@ -316,11 +314,8 @@ viz!(epts2, color=:green)
 
 viz!(tri2mesh(face1), color=:gray, alpha=0.3);
 viz!(tri2mesh(face2), color=:gray, alpha=0.3)
-
-GLMakie.save("figures/building2.png", GLMakie.current_figure());
+current_figure()
 ```
-
-![Building with pressure taps](figures/building2.png)
 
 ### Discretizing the building
 
@@ -385,13 +380,9 @@ let
 
    ax2 = GLMakie.Axis3(fig[1,2], aspect=:data, title="Internal taps")
    viz!(tri2mesh(msh.tri[idx2]))
-   
-   GLMakie.save("figures/building3.png", GLMakie.current_figure());
+   current_figure()
 end
 ```
-
-![Faces with and without internal pressure taps](figures/building3.png)
-
 
 
 ### Forces
@@ -418,7 +409,7 @@ The [`Makie`](https://docs.makie.org/stable/) is a very powerful package for vie
 
 As an example, let's try to plot on the mesh the function
 
-$f(x,y,z) = z \cdot \left[(R + x)^2 + 2(R+y)^2\right]$
+``f(x,y,z) = z \cdot \left[(R + x)^2 + 2(R+y)^2\right]``
 
 ```@example 2
 
@@ -430,12 +421,10 @@ end
 u = fun.(msh.points, R)
 smsh = tri2mesh(msh.tri)
 
-data = meshdata(smsh, etable=(u=u,))
-viz(data)
-GLMakie.save("figures/building4.png", GLMakie.current_figure());
+#data = meshdata(smsh, etable=(u=u,))
+viz(smsh, color=u)
+current_figure()
 ```
-
-![Data visualization](figures/building4.png)
 
 
 ### [`WriteVTK.jl`](https://github.com/jipolanco/WriteVTK.jl)

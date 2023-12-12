@@ -15,14 +15,18 @@ Este tutorial é dividido em duas partes:
 
 O edifício é um cilindro com diâmetro de 30 m e 150 m de altura. Apenas a pressão externa é medida. As tomadas de pressão estão localizadas em 10 linhas igualmente distribuídas ao longo da altura do edifício. Cada linha é composta de 24 tomadas de pressão, totalizando 240 tomadas de pressão externa em uma única face.
 
-O pacote `BuildingGeometry` trabalha com superfícies composta por triângulos. Cada superfície é um vetor de `Meshe.Triangle`. Neste caso, a geometria se reduz a uma única face cilíndrica que será gerada em Julia diretamente.
+O pacote `BuildingGeometry` trabalha com superfícies composta por triângulos. Cada superfície é um vetor de `Meshes.Triangle`. Neste caso, a geometria se reduz a uma única face cilíndrica que será gerada em Julia diretamente.
 
 ### Definição da geomtetria do edifício
 
-```@example 3
+```@setup 3
+import GLMakie
+import GLMakie: current_figure
 using Meshes
 using BuildingGeometry
+``` 
 
+```@example 3
 H = 150.0 # Height
 D = 30.0  # Diameter
 R = D/2   # Radius
@@ -46,14 +50,11 @@ end
 Para se visualizar a geometria, existe a função [`tri2mesh`](@ref) que converte o vetor de triângulos em um objeto `Meshes.SimpleMesh` que pode ser visualizado com o pacote [`MeshViz,jl`](https://github.com/JuliaGeometry/MeshViz.jl).
 
 ```@example 3
-using MeshViz
-using Colors
-import GLMakie
+
 viz(tri2mesh(trilst));
-GLMakie.save("figures/cigarbuilding1.png", GLMakie.current_figure());
+current_figure()
 ```
 
-![Prédio cilindrico](figures/cigarbuilding1.png)
 
 Agora, o vetor `trilst` contém a única face da geometria.
 
@@ -78,10 +79,8 @@ end
 
 viz(epts, color=:red);
 viz!(tri2mesh(trilst), color=:gray, alpha=0.3);
-GLMakie.save("figures/cigarbuilding2.png", GLMakie.current_figure());
+current_figure()
 ```
-
-![Prédio cilindrico com tomadas](figures/cigarbuilding2.png)
 
 ### Discretização do edifício
 
@@ -117,11 +116,8 @@ cc = distinguishable_colors(240)  # One color for each pressure tap
 viz(epts)
 ie = nodeside.(msh.nodes, 1)  # Getting the external pressure tap for each triangle
 viz!(tri2mesh(msh.tri), color=cc[ie])
-GLMakie.save("figures/cigarbuilding3.png", GLMakie.current_figure());
+current_figure()
 ```
-
-![Influence regions of each pressure tap](figures/cigarbuilding3.png)
-
 
 ### Fatiando o edifício
 
@@ -139,10 +135,8 @@ for i in firstindex(slices):2:lastindex(slices)
     ie1 = nodeside.(slices[i].nodes, 1)
     viz!(tri2mesh(slices[i].tri), color=cc[ie1])
 end
-GLMakie.save("figures/cigarbuilding4.png", GLMakie.current_figure());
+current_figure()
 ```
-
-![Every other slice](figures/cigarbuilding4.png)
 
 
 ### Calculando forças
@@ -151,32 +145,32 @@ Com o edifício discretizado, as forças podem facilmente ser calculadas com os 
 
 A partir de uma distribuição de pressão, a força agindo em cada face da superfície é dada por
 
-$\vec{F} = -\int_S p \:d\vec{A}$
+``\vec{F} = -\int_S p \:d\vec{A}``
 
 The moment is calculated by
 
-$\vec{M} = -\int_S p \vec{r}\times d\vec{A}$
+``\vec{M} = -\int_S p \vec{r}\times d\vec{A}``
 
 Using the discretization obtained above,
 
-$\vec{F} = -\sum_{i=1}^{N_{taps}} p_i \cdot \vec{A}_i$
+``\vec{F} = -\sum_{i=1}^{N_{taps}} p_i \cdot \vec{A}_i``
 
-$\vec{M} = -\sum_{i=1}^{N_{taps}} p_i \cdot \vec{r_i} \times \vec{A}_i$
+``\vec{M} = -\sum_{i=1}^{N_{taps}} p_i \cdot \vec{r_i} \times \vec{A}_i``
 
 Repare que dado um vetor com todas as medições de pressão, a operação acima pode ser representada por uma multiplicação de matriz:
 
-$\left\{\begin{matrix}F_x\\F_y\\F_z\\M_x\\M_y\\_Mz\end{matrix}\right\} = \left[ F_{matrix} \right] \cdot \left\{\begin{matrix}p_1\\p_2\\p_3\\\vdots\\p_{N_{taps}}\end{matrix}\right\}$
+``\left\{\begin{matrix}F_x\\F_y\\F_z\\M_x\\M_y\\_Mz\end{matrix}\right\} = \left[ F_{matrix} \right] \cdot \left\{\begin{matrix}p_1\\p_2\\p_3\\\vdots\\p_{N_{taps}}\end{matrix}\right\}``
 
-A matriz $\left[F_{matrix}\right] é esparsa. O número de linhas corresponde ao número de triângulos (o nós de maneira geral) e o número de colunas corresponde ao número de tomadas de pressão. Para calcular esta matriz para uma superfície discretizada, use o método [`addforcecontrib!`](@ref) ou [`forcematrix`](@ref). O método `forcematrix` alloca memória para a matriz e chama `addforcecontrib!` para calcular a contribuição da face de uma superfície. Os métodos são definidos assim pois pode haver contribuições de ambos os lados e estas contribuições são calculadas de maneira independente.
+A matriz ``\left[F_{matrix}\right]`` é esparsa. O número de linhas corresponde ao número de triângulos (o nós de maneira geral) e o número de colunas corresponde ao número de tomadas de pressão. Para calcular esta matriz para uma superfície discretizada, use o método [`addforcecontrib!`](@ref) ou [`forcematrix`](@ref). O método `forcematrix` alloca memória para a matriz e chama `addforcecontrib!` para calcular a contribuição da face de uma superfície. Os métodos são definidos assim pois pode haver contribuições de ambos os lados e estas contribuições são calculadas de maneira independente.
 
 O primeiro argumento é o número de colunas que corresponde ao número de tomadas de pressão. O segundo argumento é a malha (`BuildingSurface`) e o terceiro argumento especifica quais componentes de força devem ser calculados:
 
- 1. $F_x$
- 2. $F_y$
- 3. $F_z$
- 4. $M_x$
- 5. $M_y$
- 6. $M_z$
+ 1. ``F_x``
+ 2. ``F_y``
+ 3. ``F_z``
+ 4. ``M_x``
+ 5. ``M_y``
+ 6. ``M_z``
 
 
 ```@example 3
@@ -196,8 +190,8 @@ No exemplo acima, a matriz de força construída calcula o carregamente na funda
 Normalmente o calculista deseja a distribuição de carga ao longo da estrutura. No caso de edifícios altos, os programas de elementos finitos geralmente precisam das forças em cada pavimento. Se cada região da estrutura tem uma malha diferente, os métodos [`forcematrix`](@ref) e [`addforcecontrib!`](@ref) podem ser calculados de maneira independente. Mas esta é uma operação tão comum que foram implementados métodos para que calculam a matriz de força para vetores com diferentes superfícies. O uso é igual com um vetor de `BuildingSurface` usado no lugar de um único objeto `BuildingSurface`. Ainda existe um argumento chave `interleaved` que especifica em que sequência as forças são calculadas:
 
 
- * `interleaved=false`: cada componente da carga é numerada em sequência. Por exemplo, se o argumento `forces=(1,2,6)` a ordem das forças (cada linha da matriz de força) é  $F_{x,1}$, $F_{x,2}$, $\ldots$, $F_{x,N}$, $F_{y,1}$, $F_{y,2}$, $\ldots$, $F_{y,N}$, $M_{z,1}$, $M_{z,1}$, $\ldots$, $M_{z,N}$ onde $N$ é o número de pavimentos (mais especificamente o número de malhas).
- * `interleaved=false`: As cargas são numeradas primeiro por pavimento,  (ou malha), $F_{x,1}$, $F_{y,1}$, $M_{z,1}$, $F_{x,2}$, $F_{y,2}$, $M_{z,2}$, $\ldots$, $F_{x,N}$, $F_{y,N}$, $M_{z,N}$.
+ * `interleaved=false`: cada componente da carga é numerada em sequência. Por exemplo, se o argumento `forces=(1,2,6)` a ordem das forças (cada linha da matriz de força) é  ``F_{x,1}``, ``F_{x,2}``, ``\ldots``, ``F_{x,N}``, ``F_{y,1}``, ``F_{y,2}``, ``\ldots``, ``F_{y,N}``, ``M_{z,1}``, ``M_{z,1}``, ``\ldots``, ``M_{z,N}`` onde ``N`` é o número de pavimentos (mais especificamente o número de malhas).
+ * `interleaved=false`: As cargas são numeradas primeiro por pavimento,  (ou malha), ``F_{x,1}``, ``F_{y,1}``, ``M_{z,1}``, ``F_{x,2}``, ``F_{y,2}``, ``M_{z,2}``, ``\ldots``, ``F_{x,N}``, ``F_{y,N}``, ``M_{z,N}``.
 
 
 ```@example 3
@@ -221,11 +215,14 @@ Este edifício tem duas superfícies:
 
 Começaremos reproduzindo a geometria do edifício simples acima.
 
-```@example 4
-using Meshes, MeshViz
+```@setup 4
 import GLMakie
+import GLMakie: current_figure
+using Meshes
 using BuildingGeometry
+``` 
 
+```@example 4
 H = 150.0 # Altura
 D = 30.0  # Diametro
 R = D/2   # Raio
@@ -311,11 +308,8 @@ viz!(epts2, color=:green)
 
 viz!(tri2mesh(face1), color=:gray, alpha=0.3);
 viz!(tri2mesh(face2), color=:gray, alpha=0.3)
-
-GLMakie.save("figures/building2.png", GLMakie.current_figure());
+current_figure()
 ```
-
-![Building with pressure taps](figures/building2.png)
 
 
 ### Discretizando o edifício
@@ -381,13 +375,9 @@ let
 
    ax2 = GLMakie.Axis3(fig[1,2], aspect=:data, title="Internal taps")
    viz!(tri2mesh(msh.tri[idx2]))
-   
-   GLMakie.save("figures/building3.png", GLMakie.current_figure());
+   current_figure()
 end
 ```
-
-![Faces with and without internal pressure taps](figures/building3.png)
-
 
 ### Forças
 
@@ -414,7 +404,7 @@ O pacote [`Makie`](https://docs.makie.org/stable/) é um poderoso sistema de vis
 
 Como exemplo, vamos tentar plotar na malha a função 
 
-$f(x,y,z) = z \cdot \left[(R + x)^2 + 2(R+y)^2\right]$
+``f(x,y,z) = z \cdot \left[(R + x)^2 + 2(R+y)^2\right]``
 
 ```@example 4
 
@@ -426,13 +416,10 @@ end
 u = fun.(msh.points, R)
 smsh = tri2mesh(msh.tri)
 
-data = meshdata(smsh, etable=(u=u,))
-viz(data)
-GLMakie.save("figures/building4.png", GLMakie.current_figure());
+#data = meshdata(smsh, etable=(u=u,))
+viz(smsh, color=u)
+current_figure()
 ```
-
-![Data visualization](figures/building4.png)
-
 
 ### [`WriteVTK.jl`](https://github.com/jipolanco/WriteVTK.jl)
 
