@@ -48,7 +48,7 @@ function loadbsurf(fname, delim='\t')
     if size(tab,2) != 13
         error("Wrong number of columns when reading BuildingSurface object. Should be 13!")
     end
-    TriFace = Triangle{3,Float64,SVector{3,Point{3,Float64}}}
+    TriFace = Triangle{3,Float64}
     tri = TriFace[]
     points = Point{3,Float64}[]
     nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
