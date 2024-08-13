@@ -2,7 +2,9 @@
 # Testing polyhedron.jl stuff
 
 let
-
+    m² = m*m
+    m³ = m*m*m
+    
     pts0 = makebbox( (0.0, 1.0), (0.0, 2.0), (0.0, 4.0) )
     pts  = Point.(pts0...)
 
@@ -17,12 +19,12 @@ let
         @test pp[i].contour == pf[i].contour
     end
     
-    @test area(pp[1]) == 4.0
-    @test area(pp[2]) == 8.0
-    @test area(pp[3]) == 4.0
-    @test area(pp[4]) == 8.0
-    @test area(pp[5]) == 2.0
-    @test area(pp[6]) == 2.0
+    @test area(pp[1]) == 4.0m²
+    @test area(pp[2]) == 8.0m²
+    @test area(pp[3]) == 4.0m²
+    @test area(pp[4]) == 8.0m²
+    @test area(pp[5]) == 2.0m²
+    @test area(pp[6]) == 2.0m²
 
     @test normal(pp[1]) ≈ Vec( 0.0,-1.0, 0.0)
     @test normal(pp[2]) ≈ Vec( 1.0, 0.0, 0.0)
@@ -31,7 +33,7 @@ let
     @test normal(pp[5]) ≈ Vec( 0.0, 0.0,-1.0) 
     @test normal(pp[6]) ≈ Vec( 0.0, 0.0, 1.0)
     
-    @test volume(pp) == 8.0
+    @test volume(pp) == 8.0m³
     @test centroid(pp) ≈ Point(0.5, 1.0, 2.0)
 
     @test Point(0.5, 0.5, 0.5) ∈ pp
@@ -49,12 +51,12 @@ let
     pf = [ConvexPolygon(pts[ff]) for ff in faces]
 
     
-    @test area(pp[1]) == 4.0
-    @test area(pp[2]) == 8.0 * sqrt(2)
-    @test area(pp[3]) == 4.0
-    @test area(pp[4]) == 8.0 * sqrt(2)
-    @test area(pp[5]) == 2.0
-    @test area(pp[6]) == 2.0
+    @test area(pp[1]) == 4.0m²
+    @test area(pp[2]) == 8.0 * sqrt(2)m²
+    @test area(pp[3]) == 4.0m²
+    @test area(pp[4]) == 8.0 * sqrt(2)m²
+    @test area(pp[5]) == 2.0m²
+    @test area(pp[6]) == 2.0m²
     s2 = sqrt(2)/2
     @test normal(pp[1]) ≈ Vec( 0.0,-1.0, 0.0)
     @test normal(pp[2]) ≈ Vec( s2, 0.0, -s2)
@@ -63,7 +65,7 @@ let
     @test normal(pp[5]) ≈ Vec( 0.0, 0.0,-1.0) 
     @test normal(pp[6]) ≈ Vec( 0.0, 0.0, 1.0)
     
-    @test volume(pp) == 8.0
+    @test volume(pp) == 8.0m³
     @test centroid(pp) ≈ Point(2.5, 1.0, 2.0)
 
     @test Point(0.5, 0.5, 0.25) ∈ pp

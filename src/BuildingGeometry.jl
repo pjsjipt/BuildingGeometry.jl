@@ -15,7 +15,7 @@ import Meshes: Point, area, centroid, normal, coords, Ring, vertices, Polygon
 import Meshes: nvertices, Vec, isclosed, measure, Triangle, Box
 import Meshes: Polyhedron, measure, volume, Point, nvertices, vertices, nfacets
 import Meshes: boundingbox, Plane, to, connect, SimpleMesh, discretize, simplexify
-import Unitful
+using Unitful
 import Unitful: ustrip, unit
 
 export Point, normalarea, normal_
@@ -31,8 +31,8 @@ export reescalemesh, translatemesh, rotatemesh
 
 
 include("polygons.jl")
-#include("polyhedron.jl")
-#include("voronoi3d.jl")
+include("polyhedron.jl")
+include("voronoi3d.jl")
 #include("chopmesh.jl")
 #include("discr_surface.jl")
 #include("node_info.jl")

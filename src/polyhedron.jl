@@ -5,9 +5,9 @@ import CircularArrays: CircularVector
 
 
 
-struct ConvexPolyhedron{T} <: Polyhedron{3,T}
+struct ConvexPolyhedron{M<:Manifold,C<:CRS} <: Polyhedron{M,C}
     "List of vertices"
-    vertices::Vector{Point{3,T}}
+    vertices::Vector{Point{M,C}}
     "Index of vertices of each face of the polyhedron"
     faces::Vector{Vector{Int}}
     vmap::Dict{Int,Int}
@@ -22,7 +22,7 @@ The faces are specified by the indices of its vertices that make up a polygon.
 The faces will be oriented so that the normal to the polygon is external to
 the polyhedron.
 """
-function ConvexPolyhedron(vertices::AbstractVector{Point{3,T}}, faces) where {T}
+function ConvexPolyhedron(vertices::AbstractVector{Point{M,C}}, faces) where {M<:Manifold,C<:CRS}
     vmap = Dict{Int,Int}()
     imap = Dict{Int,Int}()
     
@@ -37,7 +37,7 @@ function ConvexPolyhedron(vertices::AbstractVector{Point{3,T}}, faces) where {T}
         end
     end
     nv = length(vmap)
-    verts = Vector{Point{3,T}}(undef, nv)
+    verts = Vector{Point{M,C}}(undef, nv)
     for (k,v) in vmap
         verts[v] = vertices[k]
     end
@@ -55,9 +55,9 @@ function ConvexPolyhedron(vertices::AbstractVector{Point{3,T}}, faces) where {T}
     return ConvexPolyhedron(verts, ff, imap)
 end
 
-function Base.show(io::IO, p::ConvexPolyhedron{T}) where {T}
+function Base.show(io::IO, p::ConvexPolyhedron)
     
-    println(io, "Polyhedron{$(string(T))}")
+    println(io, "ConvexPolyhedron")
     println(io, "   - Number of faces: $(length(p.faces))")
     println(io, "   - Number of vertices: $(nvertices(p))")
 end
@@ -88,8 +88,8 @@ function pnpoly(poly::ConvexPolyhedron, p::Point)
     nf = nfacets(poly)
     for i in eachindex(poly.faces)
         pf = poly[i]
-        n⃗ = normal(pf)
-        u⃗ = p - vertices(pf)[begin]
+        n⃗ = normal_(pf)
+        u⃗ = ustrip.(p - vertices(pf)[begin])
         if u⃗⋅n⃗ > 0
             return false
         end
@@ -105,25 +105,29 @@ Computes the volume of a convex polyhedron.
 
 The approach used is to find a point a inside and sum 
 """
-function Meshes.volume(p::ConvexPolyhedron{T}) where {T}
+function Meshes.volume(p::ConvexPolyhedron) 
 
     # Let's choose a point: any vertex.
     pt = p.vertices[begin]
+    vpt = to(pt)[1]
+    T = typeof(ustrip(vpt))
+    un = unit(vpt)
     vol = zero(T)
     for i in eachindex(p.faces)
         # Get normal and area of each face!
         face = p[i] # Convex polygon
-        nrm = normal_(face)
+        nrm = ustrip.(normalarea(face))
         A = norm(nrm)
-        n⃗ = nrm ./ A
+        n⃗ = (nrm ./ A)
         
         # Measure the distance from point pt to the plane of the face.
         # This should be a negative number (outward normal...)
-        h = (pt - vertices(face)[begin]) ⋅ n⃗
+        h = ustrip.(pt - vertices(face)[begin]) ⋅ n⃗
         vol -= A*h/3
     end
 
-    return vol
+    return vol*(un^3)
+    
                    
 end
 
@@ -134,41 +138,45 @@ measure(p::ConvexPolyhedron) = volume(p)
 
 Compute the center of mass of a convex polyhedron
 """
-function centroid(p::ConvexPolyhedron{T}) where {T}
+function centroid(p::ConvexPolyhedron)
     # As in the case of volume, we will select a point inside
     # the polyhedron (one of the vertices), split the volume in pyramids
     # that go from each face and converges to the selected point.
     # # Then we will simply add the contribution of each pyramid.
     # Let's choose a point: any vertex.
-    pt = p.vertices[begin]
-    xp, yp, zp = coordinates(pt)
+    pt = vertices(p)[begin]
+
+    vpt = to(pt)
     
-    xc = zero(T)
-    yc = zero(T)
-    zc = zero(T)
-    vol = zero(T)
-    
+    xp = vpt[1]
+    un = unit(xp)
+    Q = typeof(xp)
+
+    vp = to(pt)
+    vc = zero(vp)
+   
+    vol = xp^3  #0 volume (with units)
+    uvol = oneunit(vol)  # unit volume
     for i in eachindex(p.faces)
         # Get normal and area of each face!
         face = p[i] # Convex polygon
-        x0,y0,z0 = coordinates(centroid(face))
-        nrm = normal_(face)
+        
+        p0 = to(centroid(face))
+        nrm = normalarea(face)
         A = norm(nrm)
-        n⃗ = nrm ./ A
+        n⃗ = Vec( (nrm ./ A)*un)
 
         # Measure the distance from point pt to the plane of the face.
         # This should be a negative number (outward normal...)
-        h = (pt - face.contour.vertices[begin]) ⋅ n⃗
-
+        h = udot(pt - vertices(face)[begin], n⃗)
+        
         V = A*h / 3 # Volume of the pyramid
-        xc += V * ( x0 + (xp-x0)/4 )
-        yc += V * ( y0 + (yp-y0)/4 )
-        zc += V * ( z0 + (zp-z0)/4 )
 
+        vc += (V/uvol) * (p0 + (vp-p0)./4)
         vol += V
     end
 
-    return Point(xc/vol, yc/vol, zc/vol)
+    return Point( (vc*(uvol/vol))... )
     
 end
 
