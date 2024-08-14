@@ -1,6 +1,13 @@
 # Choping triangles with Convex polyhedrons
 import StaticArrays: SVector
 
+function cut_with_plane(tri::Triangle, plane::Plane)
+
+    out = typeof(tri)[]
+
+    
+end
+
 """
 `cut_with_plane(pts, p0, n, circ; atol=1e-8)`
 
