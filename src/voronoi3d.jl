@@ -56,17 +56,17 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
     volumes that contain the infinity point can be excluded.
     =#
     bx, by, bz  = let
-        (xmin,ymin,zmin), (xmax,ymax,zmax) = coordinates.(extrema(bbox))
-        bx1, by1, bz1 = makebbox((xmin,xmax),
-                                 (ymin,ymax),
-                                 (zmin,zmax))
+        pmin, pmax = coords.(extrema(bbox))
+        bx1, by1, bz1 = makebbox((pmin.x,pmax.x),
+                                 (pmin.y,pmax.y),
+                                 (pmin.z,pmax.z))
         
-        xm = (xmin+xmax)/2
-        ym = (ymin+ymax)/2
-        zm = (zmin+zmax)/2
-        bx2 = [xmin, xmax, xm, xm, xm, xm]
-        by2 = [ym, ym, ymin, ymax, ym, ym]
-        bz2 = [zm, zm, zm, zm, zmin, zmax]
+        xm = (pmin.x+pmax.x)/2
+        ym = (pmin.y+pmax.y)/2
+        zm = (pmin.z+pmax.z)/2
+        bx2 = [pmin.x, pmax.x, xm, xm, xm, xm]
+        by2 = [ym, ym, pmin.y, pmax.y, ym, ym]
+        bz2 = [zm, zm, zm, zm, pmin.z, pmax.z]
         if !isnothing(auxpts)
             [bx1; bx2; auxpts.x], [by1; by2; auxpts.y], [bz1; bz2; auxpts.z]
         else
@@ -79,8 +79,7 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
     px = [bx; x]
     py = [by; y]
     pz = [bz; z]
-    
-    vor = pyvoronoi[]([px py pz])
+    vor = pyvoronoi[]([ustrip.(px) ustrip.(py) ustrip.(pz)])
 
     p = Point.(x,y,z)
     b = Point.(bx, by,bz)

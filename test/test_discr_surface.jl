@@ -1,3 +1,8 @@
+import Unitful: m
+m² = m*m
+
+import Meshes: Manifold, CRS
+
 function genpoints2d(W, H, nw, nh)
     Δh = H / nh
     Δw = W / nw
@@ -7,37 +12,34 @@ function genpoints2d(W, H, nw, nh)
     return w₁, h₁
 end
 function genpoints(x,y, p0, u, v) 
-    p = [(x1*u + y1*v) + p0 for x1 in x, y1 in y]
+    p = [(ustrip(x1)*u + ustrip(y1)*v) + p0 for x1 in x, y1 in y]
     return reshape(p, (length(x)*length(y),))
 end
 
 
 function gentripoints2d(W, H, nw, nh)
     
-    Δx = W / nw
-    Δy = H / nw
-    
-    x = range(0.0, W, length=nw+1)
-    y = range(0.0, H, length=nh+1)
+    x = range(zero(W), W, length=nw+1)
+    y = range(zero(H), H, length=nh+1)
     
     return x,y 
     
 end
 
-function gentri(x,y, p0, u, v)
+function gentri(x,y, p0::Point{M,C}, u::Vec, v::Vec) where {M<:Manifold,C<:CRS}
     
     nx = length(x)
     ny = length(y)
     
     np = nx*ny
     
-    p = [(x1*u + y1*v + p0) for x1 in x, y1 in y]
+    p = [(ustrip(x1)*u + ustrip(y1)*v + p0) for x1 in x, y1 in y]
     pidx = reshape(1:np, (nx, ny)) 
     
     pp = reshape(p, (nx*ny,))
     count = 1
     ntri = (nx-1)*(ny-1) * 2
-    tri = Vector{Triangle{3,Float64}}(undef, ntri)
+    tri = Vector{Triangle{M,C}}(undef, ntri)
     conn = zeros(Int, ntri, 3)
     for iy in 1:ny-1
         for ix in 1:nx-1
@@ -55,13 +57,13 @@ end
 
 
 let
-    W  = 1.0
-    H = 1.0
+    W  = 1.0m
+    H = 1.0m
     At = W*H
     
     u = Vec(1.0, 0.0, 0.0)
     v = Vec(0.0, 1.0, 0.0)
-    p0 = Point3(0.0, 0.0, 0.0)
+    p0 = Point(0.0, 0.0, 0.0)
     
     pxy = genpoints2d(W, H, 2, 2)
     pts = genpoints(pxy[1], pxy[2], p0, u, v)
@@ -79,13 +81,13 @@ let
     @test all(A .≈ Ai)
 
 
-    W  = 1.0
-    H = 1.0
+    W  = 1.0m
+    H = 1.0m
     At = W*H
     
     u = Vec(1.0, 0.0, 0.0)
     v = Vec(0.0, 1.0, 0.0)
-    p0 = Point3(0.0, 0.0, 0.0)
+    p0 = Point(0.0, 0.0, 0.0)
     
     pxy = genpoints2d(W, H, 2, 2)
     pts = genpoints(pxy[1], pxy[2], p0, u, v)
@@ -103,13 +105,13 @@ let
 
 
 
-    W  = 10.0
-    H = 40.0
+    W  = 10.0m
+    H = 40.0m
     At = W*H
     
     u = Vec(1.0, 0.0, 0.0)
     v = Vec(0.0, 0.0, 1.0)
-    p0 = Point3(0.0, 0.0, 0.0)
+    p0 = Point(0.0, 0.0, 0.0)
     
     pxy = genpoints2d(W, H, 3, 4)
     pts = genpoints(pxy[1], pxy[2], p0, u, v)
@@ -124,13 +126,13 @@ let
     @test all(A .≈ Ai)
 
 
-    W  = 10.0
-    H = 40.0
+    W  = 10.0m
+    H = 40.0m
     At = W*H
     
     u = Vec(1.0, 0.0, 0.0)
     v = Vec(0.0, 0.0, 1.0)
-    p0 = Point3(0.0, 0.0, 0.0)
+    p0 = Point(0.0, 0.0, 0.0)
     
     pxy = genpoints2d(W, H, 7, 13)
     pts = genpoints(pxy[1], pxy[2], p0, u, v)
@@ -149,8 +151,8 @@ let
     # Let's test wit a slightly more chanlengin case:
     # A square building
     
-    W  = 10.0
-    H = 40.0
+    W  = 10.0m
+    H = 40.0m
     At = W*H*4
     
     pxy = genpoints2d(W, H, 7, 13)
@@ -164,20 +166,20 @@ let
 
     u2 = Vec(0.0, 1.0, 0.0)
     v2 = Vec(0.0, 0.0, 1.0)
-    p2 = Point3(W, 0.0, 0.0)
+    p2 = Point(W, 0.0m, 0.0m)
     pts2 = genpoints(pxy[1], pxy[2], p2, u2, v2)
     tri2, ptri2, conn2 = gentri(txy[1], txy[2], p2, u2, v2)
     
     u3 = Vec(-1.0, 0.0, 0.0)
     v3 = Vec(0.0, 0.0, 1.0)
-    p3 = Point3(W, W, 0.0)
+    p3 = Point(W, W, 0.0m)
     pts3 = genpoints(pxy[1], pxy[2], p3, u3, v3)
     tri3, ptri3, conn3 = gentri(txy[1], txy[2], p3, u3, v3)
     
     
     u4 = Vec(0.0, -1.0, 0.0)
     v4 = Vec(0.0, 0.0, 1.0)
-    p4 = Point3(0.0, W, 0.0)
+    p4 = Point(0.0m, W, 0.0m)
     pts4 = genpoints(pxy[1], pxy[2], p4, u4, v4)
     tri4, ptri4, conn4 = gentri(txy[1], txy[2], p4, u4, v4)
 
@@ -205,26 +207,26 @@ let
     xt, xi = slicemesh(tri, [0.0, 0.5, 1.0])
     A = [sum(area.(t)) for t in xt]
 
-    @test sum(A) ≈ 1.0
-    @test all(A .≈ 0.5)
+    @test sum(A) ≈ 1.0m²
+    @test all(A .≈ 0.5m²)
 
     z = range(0.0, 1.0, length=6)
     xt, xi = slicemesh(tri, z)
     A = [sum(area.(t)) for t in xt]
-    @test sum(A) ≈ 1.0
-    @test all(A .≈ 0.2)
+    @test sum(A) ≈ 1.0m²
+    @test all(A .≈ 0.2m²)
     
     
     z = range(0.0, 1.0, length=3)
     txy = gentripoints2d(1.0, 1.0, 2, 4)
     u = Vec(1.0, 0.0, 0.0)
     v = Vec(0.0, 0.0, 1.0)
-    p0 = Point3(0.0, 0.0, 0.0)
+    p0 = Point(0.0, 0.0, 0.0)
     tri, ptri, conn = gentri(txy[1], txy[2], p0, u, v)
     trilst, triidx = slicemesh(tri, z)
 
     A = [sum(area.(t)) for t in trilst]
-    @test sum(A) ≈ 1.0
+    @test sum(A) ≈ 1.0m²
     @test all(A .≈ z[2])
 
 
@@ -232,12 +234,12 @@ let
     txy = gentripoints2d(1.0, 1.0, 2, 4)
     u = Vec(1.0, 0.0, 0.0)
     v = Vec(0.0, 0.0, 1.0)
-    p0 = Point3(0.0, 0.0, 0.0)
+    p0 = Point(0.0, 0.0, 0.0)
     tri, ptri, conn = gentri(txy[1], txy[2], p0, u, v)
     trilst, triidx = slicemesh(tri, z)
 
     A = [sum(area.(t)) for t in trilst]
-    @test sum(A) ≈ 1.0
+    @test sum(A) ≈ 1.0m²
     @test all(A .≈ z[2])
 
 end

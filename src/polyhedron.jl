@@ -69,7 +69,6 @@ import Base.getindex
 Base.getindex(p::ConvexPolyhedron, i) = ConvexPolygon(CircularVector(p.vertices[p.faces[i]]))
 
 plane(p::ConvexPolyhedron, i) = plane(p[i])
-
 Meshes.nfacets(p::ConvexPolyhedron) = length(p.faces)
 
 

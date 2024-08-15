@@ -23,10 +23,10 @@ could potentially be closest to a point if the points are not well distributed.
 The function returns the triangles that make up each region of influence. It returns, as well, the index of the original triangle from where it was created.
 """
 function discrsurface(tri, idx::AbstractVector{<:Integer},
-                      pts::AbstractVector{Point{3,Float64}};
-                      rtol=1e-8, bbox=nothing, nd=8)
+                      pts::AbstractVector{<:Point};
+                      bbox=nothing, nd=8)
 
-    TriFace = Triangle{3,Float64}
+    TriFace = eltype(tri)
     
     ntri = length(tri)
     npts = length(pts)
@@ -43,8 +43,6 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
 
     Lref = norm(bbpts.max-bbpts.min)
     
-    atol = rtol * Lref/2
-
     vor = voronoi3d(pts, bbox=bbox)
     # Chop each triangle with every polyhedron.
     # Each node of `pts` corresponds to a volume (polyhedron). We will
@@ -56,11 +54,11 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
         trim = TriFace[]
         for i in idx
             t = tri[i]
-            m = chopwithpolyhedron(vol, t, atol=atol)
+            m = chopwithpolyhedron(vol, t)
             nm = length(m)
             if nm > 0
                 for ti in m
-                    if area(ti) > 0
+                    if ispositive(area(ti))
                         push!(trim, ti)
                         push!(id, i)
                     end
@@ -74,15 +72,15 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
     return trivor, tidx
 end
 
-discrsurface(tri, pts::AbstractVector{Point{3,Float64}};
-             rtol=1e-8, bbox=nothing, nd=8) = discrsurface(tri, 1:length(tri), pts;
-                                                           rtol=rtol, bbox=bbox,nd=nd)
+discrsurface(tri, pts::AbstractVector{<:Point};
+             bbox=nothing, nd=8) = discrsurface(tri, 1:length(tri), pts;
+                                                bbox=bbox,nd=nd)
 
 
 
 """
-`slicemesh(m, p; rtol=1e-8)`
-`slicemesh(m, z; x=0, y=0, rtol=1e-8)`
+`slicemesh(m, p)`
+`slicemesh(m, z; x=0, y=0)`
 `slicemesh(m, nslices, pa, pb;  rtol=1e-8)`
 
 Slice a mesh in slices defined by a vector of points `p`. Since in most cases
@@ -97,9 +95,9 @@ account. There is a method for slicing `nslices` from `pa` to `pb`.
  * `rtol`: relative tolerance admitted.
 
 """
-function slicemesh(m::AbstractVector{P},
-                   p::AbstractVector{Point{3,T}}; rtol=1e-8) where {P,T}
-    TriFace = Triangle{3,Float64}
+function slicemesh(m::AbstractVector{<:Triangle},
+                   p::AbstractVector{<:Point})
+    TriFace = eltype(m)
     mshlst = Vector{TriFace}[]
     mshidx = Vector{Int}[]
     # We will analyze each slice
@@ -116,12 +114,12 @@ function slicemesh(m::AbstractVector{P},
             v = vertices(f)
             # Check if there are vertices or edges in the slice in question
             
-            all((u-p₁) ⋅ n⃗₂ < 0 for u in v) && continue # Vertices below. Next!
-            all((u-p₂) ⋅ n⃗₂ > 0 for u in v) && continue # Vertices above. Next!
+            all(isnegative(udot(u-p₁,n⃗₂)) for u in v) && continue # Vertices below. Next!
+            all(ispositive(udot(u-p₂, n⃗₂)) for u in v) && continue # Vertices above. Next!
 
             # We have an intersection
-            pts = cut_with_plane(v, p₁, n⃗₁, true; atol=atol)
-            pts = cut_with_plane(pts, p₂, n⃗₂, true; atol=atol)
+            pts = cut_with_plane(v, p₁, n⃗₁, true)
+            pts = cut_with_plane(pts, p₂, n⃗₂, true)
 
             # Generate triangles:
             npts = length(pts)
@@ -137,18 +135,18 @@ function slicemesh(m::AbstractVector{P},
     return mshlst, mshidx
 end
 
-function slicemesh(m::AbstractVector{P}, z::AbstractVector{T};
-                   x=0, y=0, rtol=1e-8) where {P,T}
-    p = Point{3,T}.(x, y, z)
-    return slicemesh(m, p; rtol=rtol)
+function slicemesh(m::AbstractVector{<:Triangle}, z::AbstractVector{T};
+                   x=0, y=0) where {T<:Real}
+    p = Point.(x, y, z)
+    return slicemesh(m, p)
 end
 
 
-function slicemesh(m::AbstractVector{P}, nslices::Integer,
-                   pa::Point{3,T}, pb::Point{3,T};  rtol=1e-8) where {P,T}
+function slicemesh(m::AbstractVector{<:Triangle}, nslices::Integer,
+                   pa::Point, pb::Point)
     ξ = range(0.0, 1.0, length=nslices+1)
     u⃗ = pb-pa
     p = [pa + ξᵢ * u⃗ for ξᵢ in ξ]
-    return slicemesh(m, p; rtol=rtol)
+    return slicemesh(m, p)
 end
 

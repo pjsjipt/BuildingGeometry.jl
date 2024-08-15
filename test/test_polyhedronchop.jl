@@ -70,7 +70,7 @@ let B = BuildingGeometry
 
     p0 = Point(0.0, 0.0, 0.0)
     n = Vec(-1.0, 0.0, 0.0)
-    pts = Point3.([(0.0,-1.0,0.0), (1.0,-1.0,0.0), (1.0,1.0,0.0), (0.0,1.0,0.0)])
+    pts = Point.([(0.0,-1.0,0.0), (1.0,-1.0,0.0), (1.0,1.0,0.0), (0.0,1.0,0.0)])
     out = cut_with_plane(pts, p0, n, false)
     @test all(pts .≈ out)
 
