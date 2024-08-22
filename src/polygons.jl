@@ -49,6 +49,8 @@ ConvexPolygon(pts...) = ConvexPolygon(collect(pts))
 
 GeometryBasics.coordinates(p::ConvexPolygon) = p.contour
 Base.length(p::ConvexPolygon) = length(p.contour)
+vertices(p::ConvexPolygon) = p.contour
+nvertices(p::ConvexPolygon) = length(p.contour)
 
 
 

@@ -5,7 +5,7 @@ import CircularArrays: CircularVector
 
 
 
-struct ConvexPolyhedron{T} <: Polyhedron{3,T}
+struct ConvexPolyhedron{T} <: GeometryPrimitive{3,T}
     "List of vertices"
     vertices::Vector{Point{3,T}}
     "Index of vertices of each face of the polyhedron"
@@ -62,14 +62,17 @@ function Base.show(io::IO, p::ConvexPolyhedron{T}) where {T}
     println(io, "   - Number of vertices: $(nvertices(p))")
 end
 
-Meshes.vertices(p::ConvexPolyhedron) = p.vertices
-Meshes.nvertices(p::ConvexPolyhedron) = length(p.vertices)
+vertices(p::ConvexPolyhedron) = p.vertices
+GeometryBasics.coordinates(p::ConvexPolyhedron) = p.vertices
+
+nvertices(p::ConvexPolyhedron) = length(p.vertices)
+Base.length(p::ConvexPolyhedron) = length(p.vertices)
 
 import Base.getindex
-Base.getindex(p::ConvexPolyhedron, i) = ConvexPolygon(CircularVector(p.vertices[p.faces[i]]))
+Base.getindex(p::ConvexPolyhedron, i) = ConvexPolygon(p.vertices[p.faces[i]])
 
 
-Meshes.nfacets(p::ConvexPolyhedron) = length(p.faces)
+nfacets(p::ConvexPolyhedron) = length(p.faces)
 
 
 """
@@ -105,7 +108,7 @@ Computes the volume of a convex polyhedron.
 
 The approach used is to find a point a inside and sum 
 """
-function Meshes.volume(p::ConvexPolyhedron{T}) where {T}
+function GeometryBasics.volume(p::ConvexPolyhedron{T}) where {T}
 
     # Let's choose a point: any vertex.
     pt = p.vertices[begin]
@@ -113,7 +116,7 @@ function Meshes.volume(p::ConvexPolyhedron{T}) where {T}
     for i in eachindex(p.faces)
         # Get normal and area of each face!
         face = p[i] # Convex polygon
-        nrm = normal_(face)
+        nrm = normalarea(face)
         A = norm(nrm)
         n⃗ = nrm ./ A
         
@@ -141,7 +144,7 @@ function centroid(p::ConvexPolyhedron{T}) where {T}
     # # Then we will simply add the contribution of each pyramid.
     # Let's choose a point: any vertex.
     pt = p.vertices[begin]
-    xp, yp, zp = coordinates(pt)
+    xp, yp, zp = pt
     
     xc = zero(T)
     yc = zero(T)
@@ -151,14 +154,14 @@ function centroid(p::ConvexPolyhedron{T}) where {T}
     for i in eachindex(p.faces)
         # Get normal and area of each face!
         face = p[i] # Convex polygon
-        x0,y0,z0 = coordinates(centroid(face))
-        nrm = normal_(face)
+        x0,y0,z0 = centroid(face)
+        nrm = normalarea(face)
         A = norm(nrm)
         n⃗ = nrm ./ A
 
         # Measure the distance from point pt to the plane of the face.
         # This should be a negative number (outward normal...)
-        h = (pt - face.contour.vertices[begin]) ⋅ n⃗
+        h = (pt - face.contour[begin]) ⋅ n⃗
 
         V = A*h / 3 # Volume of the pyramid
         xc += V * ( x0 + (xp-x0)/4 )
