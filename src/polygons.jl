@@ -159,7 +159,7 @@ end
 
 Meshes.discretize(poly::ConvexPolygon, method=nothing) = simplexify(poly)
 
-plane(p::ConvexPolygon) = Plane(vertices(p)[begin], normal(p))
+Meshes.plane(p::ConvexPolygon) = Plane(vertices(p)[begin], normal(p))
 
 
 

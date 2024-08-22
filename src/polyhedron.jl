@@ -68,7 +68,7 @@ Meshes.nvertices(p::ConvexPolyhedron) = length(p.vertices)
 import Base.getindex
 Base.getindex(p::ConvexPolyhedron, i) = ConvexPolygon(CircularVector(p.vertices[p.faces[i]]))
 
-plane(p::ConvexPolyhedron, i) = plane(p[i])
+Meshes.plane(p::ConvexPolyhedron, i::Integer) = plane(p[i])
 Meshes.nfacets(p::ConvexPolyhedron) = length(p.faces)
 
 
@@ -212,3 +212,11 @@ function poly2mesh(poly::ConvexPolyhedron)
                                
 end
 
+
+function surface_mesh(poly::ConvexPolyhedron)
+    v, conn1 = poly2mesh(poly)
+
+    conn = [connect( (i[1], i[2], i[3]) ) for i in eachrow(conn1)]
+
+    return SimpleMesh(v, conn)
+end

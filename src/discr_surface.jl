@@ -1,7 +1,8 @@
 export discrsurface
 # Surface discretization
-
-
+using Infiltrator
+import Unitful: m
+m² = m*m
 """
 `discrsurface(tri, idx, pts)`
 `discrsurface(tri, pts)`
@@ -49,16 +50,21 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
     # Get every triangle on the surface mesh and 
     trivor = Vector{TriFace}[]
     tidx = Vector{Int}[]
+    cnt = 1 #*****
     for vol in vor.cells
         id = Int[]
         trim = TriFace[]
         for i in idx
+            
             t = tri[i]
             m = chopwithpolyhedron(vol, t)
             nm = length(m)
             if nm > 0
+                #@infiltrate cnt==315
                 for ti in m
-                    if ispositive(area(ti))
+                    aa = area(ti)
+                    @infiltrate aa > 200m²
+                    if ispositive(aa)
                         push!(trim, ti)
                         push!(id, i)
                     end
@@ -67,6 +73,7 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
         end
         push!(trivor, trim)
         push!(tidx, id)
+        cnt += 1 #*****
     end
 
     return trivor, tidx
@@ -109,24 +116,34 @@ function slicemesh(m::AbstractVector{<:Triangle},
         L = norm(p₂-p₁)
         n⃗₂ = (p₂ - p₁) ./ L
         n⃗₁ = -n⃗₂
-        atol = rtol*L
+        pl1 = Plane(p₁, n⃗₁) # Plane 1
+        pl2 = Plane(p₂, n⃗₂) # Plane 1
+        
         for (k,f) in enumerate(m)
             v = vertices(f)
             # Check if there are vertices or edges in the slice in question
             
             all(isnegative(udot(u-p₁,n⃗₂)) for u in v) && continue # Vertices below. Next!
             all(ispositive(udot(u-p₂, n⃗₂)) for u in v) && continue # Vertices above. Next!
-
+            
             # We have an intersection
-            pts = cut_with_plane(v, p₁, n⃗₁, true)
-            pts = cut_with_plane(pts, p₂, n⃗₂, true)
-
-            # Generate triangles:
-            npts = length(pts)
-            for i in 2:npts-1
-                push!(mshi, Triangle(pts[1], pts[i], pts[i+1]))
+            # Chop with plane 1
+            tri1 = cut_with_plane(f, pl1)
+            # Chop with plane 2. Now we might have more than 1 triangle
+            tri2 = TriFace[]
+            for tri in tri1
+                xtri = cut_with_plane(tri, pl2)
+                for t in xtri
+                    push!(tri2, t)
+                end
+            end
+            
+            # Let's store this information
+            for t in tri2
+                push!(mshi, t)
                 push!(idx, k)
             end
+            
         end
         push!(mshlst, mshi)
         push!(mshidx, idx)

@@ -22,9 +22,9 @@ function cut_with_plane(tri::Triangle, plane::Plane)
     p = vertices(tri)
 
     p0 = plane.p
-    n = normal(pl)
+    n = normal(plane)
     
-    s = plane_side.(p, Ref(p0), normal(n))
+    s = plane_side.(p, Ref(p0), Ref(n))
 
     # A plane can be defined by a point and its normal
     # Funcion `plane_side` can be used to check if a point is
@@ -198,7 +198,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron, tri::Triangle)
         end
         
         if nvin == 3 # The triangle is completely inside the polyhedron
-            return [Triangle(vertices(tri)...)]
+            return [tri]
         end
     end
     # Here is the tricky part.
@@ -211,23 +211,22 @@ function chopwithpolyhedron(poly::ConvexPolyhedron, tri::Triangle)
     # 2. We will sweep this polygon. If a vertex is outside the plane,
     #    this vertex we need to see if the previous vert
 
-    vv = vertices(tri)
-    pts = [vv[1], vv[2], vv[3]]
 
     nf = nfacets(poly)
-    
+    t1 = [tri]
     for i in 1:nf
         face = poly[i]
-        n = normal(face)
-        p0 = vertices(face)[begin]
-        pts = cut_with_plane(pts, p0, n)
+        pl = Plane(vertices(face)[begin], normal(face))
+        t2 = TT[]
+        for t in t1
+            tx = cut_with_plane(t, pl)
+            for x in tx
+                push!(t2, x)
+            end
+        end
+        t1 = t2
     end
-    if length(pts) > 2
-        return [Triangle(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
-    else
-        return TT[]
-    end
-    
+    return t1
 end
 
 

@@ -2,6 +2,7 @@ import Unitful: m
 m² = m*m
 
 import Meshes: Manifold, CRS
+import Meshes: connect
 
 function genpoints2d(W, H, nw, nh)
     Δh = H / nh
@@ -55,6 +56,7 @@ function gentri(x,y, p0::Point{M,C}, u::Vec, v::Vec) where {M<:Manifold,C<:CRS}
 end
 
 
+connect_triangles(conn) = [connect( (r[1], r[2], r[3]) ) for r in eachrow(conn)]
 
 let
     W  = 1.0m

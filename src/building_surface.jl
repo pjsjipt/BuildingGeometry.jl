@@ -262,10 +262,12 @@ Create a `Meshes.SimpleMesh` from a list of vectors. Very simple, used
 for visualizing meshes. Each triangle is assumed to have independent
 vertices.
 """
-function tri2mesh(tri::AbstractVector{<:Triangle{Dim,T}}) where {Dim,T}
+function tri2mesh(tri::AbstractVector{<:Triangle}) 
     ntri = length(tri)
-    verts = fill(Point{Dim,T}(0,0,0), ntri*3)
+    PType = eltype(tri)
+    verts = fill(Point(0.0u"m",0.0u"m", 0.0u"m"), ntri*3)
     conn = fill((0,0,0), ntri)
+    
     for i in 1:ntri
         k = (i-1)*3 + 1
         vtri = vertices(tri[i])
