@@ -15,7 +15,7 @@ import Meshes: Point, area, centroid, normal, coords, Ring, vertices, Polygon
 import Meshes: nvertices, Vec, isclosed, measure, Triangle, Box
 import Meshes: Polyhedron, measure, volume, Point, nvertices, vertices, nfacets
 import Meshes: boundingbox, Plane, to, connect, SimpleMesh, discretize, simplexify
-import Meshes: ispositive, isnegative
+import Meshes: ispositive, isnegative, isapproxzero
 using Unitful
 import Unitful: ustrip, unit
 

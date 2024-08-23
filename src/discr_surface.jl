@@ -1,6 +1,5 @@
 export discrsurface
 # Surface discretization
-using Infiltrator
 import Unitful: m
 m² = m*m
 """
@@ -25,7 +24,7 @@ The function returns the triangles that make up each region of influence. It ret
 """
 function discrsurface(tri, idx::AbstractVector{<:Integer},
                       pts::AbstractVector{<:Point};
-                      bbox=nothing, nd=8)
+                      bbox=nothing, nd=8, return_vor=false)
 
     TriFace = eltype(tri)
     
@@ -45,12 +44,17 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
     Lref = norm(bbpts.max-bbpts.min)
     
     vor = voronoi3d(pts, bbox=bbox)
+
+    if return_vor
+        return vor 
+    end
+
+    
     # Chop each triangle with every polyhedron.
     # Each node of `pts` corresponds to a volume (polyhedron). We will
     # Get every triangle on the surface mesh and 
     trivor = Vector{TriFace}[]
     tidx = Vector{Int}[]
-    cnt = 1 #*****
     for vol in vor.cells
         id = Int[]
         trim = TriFace[]
@@ -60,10 +64,8 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
             m = chopwithpolyhedron(vol, t)
             nm = length(m)
             if nm > 0
-                #@infiltrate cnt==315
                 for ti in m
                     aa = area(ti)
-                    @infiltrate aa > 200m²
                     if ispositive(aa)
                         push!(trim, ti)
                         push!(id, i)
@@ -73,15 +75,15 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
         end
         push!(trivor, trim)
         push!(tidx, id)
-        cnt += 1 #*****
     end
 
     return trivor, tidx
 end
 
 discrsurface(tri, pts::AbstractVector{<:Point};
-             bbox=nothing, nd=8) = discrsurface(tri, 1:length(tri), pts;
-                                                bbox=bbox,nd=nd)
+             bbox=nothing, nd=8, return_vor=false) =
+                 discrsurface(tri, 1:length(tri), pts;
+                              bbox=bbox,nd=nd, return_vor=return_vor)
 
 
 
@@ -113,8 +115,7 @@ function slicemesh(m::AbstractVector{<:Triangle},
         mshi = TriFace[] # We will decompose this into triangles
         p₁ = p[i-1]
         p₂ = p[i]
-        L = norm(p₂-p₁)
-        n⃗₂ = (p₂ - p₁) ./ L
+        n⃗₂ = Meshes.unormalize(p₂ - p₁) 
         n⃗₁ = -n⃗₂
         pl1 = Plane(p₁, n⃗₁) # Plane 1
         pl2 = Plane(p₂, n⃗₂) # Plane 1
@@ -152,10 +153,10 @@ function slicemesh(m::AbstractVector{<:Triangle},
     return mshlst, mshidx
 end
 
-function slicemesh(m::AbstractVector{<:Triangle}, z::AbstractVector{T};
-                   x=0, y=0) where {T<:Real}
+function slicemesh(msh::AbstractVector{<:Triangle}, z::AbstractVector;
+                   x=0m, y=0m)
     p = Point.(x, y, z)
-    return slicemesh(m, p)
+    return slicemesh(msh, p)
 end
 
 

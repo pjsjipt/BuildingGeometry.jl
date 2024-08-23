@@ -4,13 +4,12 @@ import StaticArrays: SVector
 function plane_side(p, pl_p0, pl_n)
 
     s = udot(p-pl_p0, pl_n)
-
-    if s < zero(s)
-        return -1
+    if isapproxzero(s)
+        return 0
     elseif s > zero(s)
         return 1
     else
-        return 0
+        return -1
     end
 end
     

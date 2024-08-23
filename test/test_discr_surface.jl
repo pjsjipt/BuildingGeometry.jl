@@ -196,7 +196,7 @@ let
     @test all(A .≈ Ai)
 
     # Now we will test the slicind stuff
-    z = range(0.0, H, length=18)
+    z = range(0.0m, H, length=18)
     trilst, triidx = slicemesh(tri, z)
 
     A = [sum(area.(t)) for t in trilst]
@@ -206,20 +206,20 @@ let
 
 
     tri = [Triangle((0,0,0), (1,0,0), (1,0,1)), Triangle((0,0,0),(1,0,1),(0,0,1))]
-    xt, xi = slicemesh(tri, [0.0, 0.5, 1.0])
+    xt, xi = slicemesh(tri, [0.0m, 0.5m, 1.0m])
     A = [sum(area.(t)) for t in xt]
 
     @test sum(A) ≈ 1.0m²
     @test all(A .≈ 0.5m²)
 
-    z = range(0.0, 1.0, length=6)
+    z = range(0.0m, 1.0m, length=6)
     xt, xi = slicemesh(tri, z)
     A = [sum(area.(t)) for t in xt]
     @test sum(A) ≈ 1.0m²
     @test all(A .≈ 0.2m²)
     
     
-    z = range(0.0, 1.0, length=3)
+    z = range(0.0m, 1.0m, length=3)
     txy = gentripoints2d(1.0, 1.0, 2, 4)
     u = Vec(1.0, 0.0, 0.0)
     v = Vec(0.0, 0.0, 1.0)
@@ -229,10 +229,10 @@ let
 
     A = [sum(area.(t)) for t in trilst]
     @test sum(A) ≈ 1.0m²
-    @test all(A .≈ z[2])
+    @test all(A .≈ z[2]*1m)
 
 
-    z = range(0.0, 1.0, length=4)
+    z = range(0.0m, 1.0m, length=4)
     txy = gentripoints2d(1.0, 1.0, 2, 4)
     u = Vec(1.0, 0.0, 0.0)
     v = Vec(0.0, 0.0, 1.0)
@@ -242,6 +242,6 @@ let
 
     A = [sum(area.(t)) for t in trilst]
     @test sum(A) ≈ 1.0m²
-    @test all(A .≈ z[2])
+    @test all(A .≈ z[2]*1m)
 
 end
