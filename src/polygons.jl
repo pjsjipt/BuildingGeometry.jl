@@ -53,7 +53,6 @@ vertices(p::ConvexPolygon) = p.contour
 nvertices(p::ConvexPolygon) = length(p.contour)
 
 
-
 """
 `normalarea(p)`
 
@@ -71,10 +70,13 @@ GeometryBasics.area(p::ConvexPolygon) = norm(normalarea(p))
 function normal(p::ConvexPolygon)
     na = normalarea(p)
 
-    return na ./ norm(na)
+    return Vec(na ./ norm(na))
 end
 
+orientation(p::ConvexPolygon{2}) = normalarea(p) > 0 ? 1 : -1
+
     
+Plane(p::ConvexPolygon) = Plane(p.contour[begin], normal(p))
 
 
 
@@ -159,8 +161,6 @@ function centroid(p::ConvexPolygon{Dim,T}) where {Dim,T}
     return  CA./A
     
 end
-
-
 
 
 

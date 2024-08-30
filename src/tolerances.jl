@@ -6,9 +6,9 @@
 const ATOL64 = 1.0e-10
 const ATOL32 = 1.0f-5
 
+atol(::Type{Float64}) = ATOL64
+atol(::Type{Float32}) = ATOL32
 atol(x) = atol(typeof(x))
-atol(::Type{Float64}) = ATOL64[]
-atol(::Type{Float32}) = ATOL32[]
 
 isequalzero(x) = x == zero(x)
 isequalone(x) = x == one(x)

@@ -6,13 +6,13 @@ let
 
     @test length(p1) == 4
     @test area(p1) == 1
-    @test normal(p1) > 0
+    @test orientation(p1) == 1
 
     p2 = ConvexPolygon([(0,0), (1,0), (1,1), (0,1)])
 
     @test length(p2) == 4
     @test area(p2) == 1.0
-    @test normal(p2) > 0
+    @test orientation(p2) == 1
     @test centroid(p2) ≈ Point(0.5, 0.5)
     @test Point(0.5, 0.5) ∈ p2
     @test Point(0.5, -0.5) ∉ p2
@@ -26,7 +26,7 @@ let
     p3 = ConvexPolygon(reverse( [(0,0), (1,0), (1,1), (0,1)] ))
     @test length(p3) == 4
     @test area(p3) == 1.0
-    @test normal(p3) < 0
+    @test orientation(p3) == -1
     @test centroid(p3) == Point(0.5, 0.5)
     @test Point(0.5, 0.5) ∈ p3
     @test Point(0.5, -0.5) ∉ p3

@@ -1,6 +1,97 @@
 # Choping triangles with Convex polyhedrons
 import StaticArrays: SVector
 
+
+import StaticArrays: SVector
+
+function plane_side(p, pl_p0, pl_n)
+
+    s = (p - pl_p0) ⋅ pl_n
+    if isapproxzero(s)
+        return 0
+    elseif s > zero(s)
+        return 1
+    else
+        return -1
+    end
+end
+
+
+plane_side(p, plane::Plane) = plane_side(p, plane.p, plane.n)
+@inline idxn(i) = (i % 3) + 1
+@inline idxp(i) = (i+1) % 3 + 1
+function cut_with_plane(tri::TriangleFace, plane::Plane)
+
+    out = typeof(tri)[]
+    p = coordinates(tri)
+    TT = typeof(tri)
+    p0 = plane.p
+    n = normal(plane)
+    
+    s = plane_side.(p, Ref(p0), Ref(n))
+
+    # A plane can be defined by a point and its normal
+    # Funcion `plane_side` can be used to check if a point is
+    # 1. On the side pointed by the normal (+)
+    # 2. On the side opposite to the normal (-)
+    # 3. On the plane itself.
+    # If all points are either on the plane or on the + side,
+    # then nothing should be returned. If all points are on
+    # the - side or on the plane, the triangle itself should be returned.
+    
+    
+
+    if all(s .>= 0)
+        # Every vertex of the triangle is on the + side of the triangle. Nothing!
+        return out
+    elseif all(s .<= 0)
+        # Every vertex is on the - side of the plane: return the triangle itself
+        push!(out, tri)
+        return out
+    end
+
+    
+    # Now we have a more complex case. Let's check edge by edge
+    # There are 3 possible situations
+    # 1. Two vertices on the + side and 1 in - side
+    # 2. Two vertices on the - side and 1 in + side
+    # 3. One vertex in the + side, one in the - side and one on the plane
+
+    s1 = (s[1], s[2], s[3], s[1])
+
+    if any(s .== 0)
+        idx = findfirst(isequal(0), s)
+        inx = idxn(idx)
+        ipr = idxp(idx)
+        pi = intersectpoint(n, p0, p[inx], p[ipr])
+        if s[inx] < 0
+            push!(out, TT(p[idx], p[inx], pi))
+        else
+            push!(out, TT(p[idx], pi, p[inx]))
+        end
+           
+    elseif sum(s .== 1) == 2
+        idx = findfirst(isequal(-1), s)
+        inx = idxn(idx)
+        ipr = idxp(idx)
+        pi1 = intersectpoint(n, p0, p[idx], p[inx])
+        pi2 = intersectpoint(n, p0, p[idx], p[ipr])
+
+        push!(out, TT(p[idx], pi1, pi2))
+    else
+        idx = findfirst(isequal(1), s)
+        inx = idxn(idx)
+        ipr = idxp(idx)
+        pi1 = intersectpoint(n, p0, p[idx], p[inx])
+        pi2 = intersectpoint(n, p0, p[idx], p[ipr])
+
+        push!(out, TT(pi1, p[inx], pi2))
+        push!(out, TT(pi2, p[inx], p[ipr]))
+    end
+
+    return out
+    
+end
 """
 `cut_with_plane(pts, p0, n, circ; atol=1e-8)`
 
@@ -82,30 +173,30 @@ chopping away the parts of the triangle that are outside the polyhedron.
 The function returns a list of triangles that are inside the polyhedron.
 
 """
-function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
-                            atol=1e-8) where {T}
+function chopwithpolyhedron(poly::ConvexPolyhedron{T},
+                            tri::TriangleFace) where {T}
     
     # First we will check if there is any chance of intersection
-    TT = Triangle{3,T}
+    TT = typeof(tri)
     let
-        pmin,pmax = coordinates.(extrema(boundingbox(poly)))
-        tmin,tmax = coordinates.(extrema(boundingbox(tri)))
-        if pmin[1] > tmax[1] || pmin[2] > tmax[2] || pmin[3] > tmax[3] ||
-            tmin[1] > pmax[1] || tmin[2] > pmax[2] || tmin[3] > tmax[3]
+        pbox = boundingbox(poly)
+        tbox = boundingbox(tri)
+        if pbox.min > tbox.max || pbox.min > tbox.max || pbox.min > tbox.max ||
+            tbox.min > pbox.max || tbox.min > pbox.max || tbox.min > tbox.max
             return TT[]
         end
         # Check if every triangle vertex is inside the Polyhedron.
         # This is another simple case
 
         nvin = 0
-        for v in vertices(tri)
+        for v in coordinates(tri)
             if v ∈ poly
                 nvin += 1
             end
         end
         
         if nvin == 3 # The triangle is completely inside the polyhedron
-            return [Triangle(vertices(tri)...)]
+            return [TT(coordinates(tri)...)]
         end
     end
     # Here is the tricky part.
@@ -118,23 +209,22 @@ function chopwithpolyhedron(poly::ConvexPolyhedron{T}, tri::Triangle{3,T};
     # 2. We will sweep this polygon. If a vertex is outside the plane,
     #    this vertex we need to see if the previous vert
 
-    vv = vertices(tri)
-    pts = [vv[1], vv[2], vv[3]]
-
-    nf = nfacets(poly)
     
+    nf = nfacets(poly)
+    t1 = [tri]
     for i in 1:nf
         face = poly[i]
-        n = normal(face)
-        p0 = vertices(face)[begin]
-        pts = cut_with_plane(pts, p0, n, atol=atol)
+        pl = Plane(face) 
+        t2 = TT[]
+        for t in t1
+            tx = cut_with_plane(t, pl)
+            for x in tx
+                push!(t2, x)
+            end
+        end
+        t1 = t2
     end
-    if length(pts) > 2
-        return [Triangle(pts[1], pts[i], pts[i+1]) for i in 2:length(pts)-1]
-    else
-        return TT[]
-    end
-    
+    return t1
 end
 
     

@@ -24,9 +24,9 @@ The function returns the triangles that make up each region of influence. It ret
 """
 function discrsurface(tri, idx::AbstractVector{<:Integer},
                       pts::AbstractVector{Point{3,Float64}};
-                      rtol=1e-8, bbox=nothing, nd=8)
+                      bbox=nothing, nd=8)
 
-    TriFace = Triangle{3,Float64}
+    TriFace = eltype(tri) 
     
     ntri = length(tri)
     npts = length(pts)
@@ -43,7 +43,6 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
 
     Lref = norm(bbpts.max-bbpts.min)
     
-    atol = rtol * Lref/2
 
     vor = voronoi3d(pts, bbox=bbox)
     # Chop each triangle with every polyhedron.
@@ -56,7 +55,7 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
         trim = TriFace[]
         for i in idx
             t = tri[i]
-            m = chopwithpolyhedron(vol, t, atol=atol)
+            m = chopwithpolyhedron(vol, t)
             nm = length(m)
             if nm > 0
                 for ti in m
@@ -75,8 +74,8 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
 end
 
 discrsurface(tri, pts::AbstractVector{Point{3,Float64}};
-             rtol=1e-8, bbox=nothing, nd=8) = discrsurface(tri, 1:length(tri), pts;
-                                                           rtol=rtol, bbox=bbox,nd=nd)
+             bbox=nothing, nd=8) = discrsurface(tri, 1:length(tri), pts;
+                                                bbox=bbox,nd=nd)
 
 
 
@@ -99,7 +98,7 @@ account. There is a method for slicing `nslices` from `pa` to `pb`.
 """
 function slicemesh(m::AbstractVector{P},
                    p::AbstractVector{Point{3,T}}; rtol=1e-8) where {P,T}
-    TriFace = Triangle{3,Float64}
+    TriFace = TriangleFace{Point{3,T}}
     mshlst = Vector{TriFace}[]
     mshidx = Vector{Int}[]
     # We will analyze each slice
@@ -113,7 +112,7 @@ function slicemesh(m::AbstractVector{P},
         n⃗₁ = -n⃗₂
         atol = rtol*L
         for (k,f) in enumerate(m)
-            v = vertices(f)
+            v = coordinates(f)
             # Check if there are vertices or edges in the slice in question
             
             all((u-p₁) ⋅ n⃗₂ < 0 for u in v) && continue # Vertices below. Next!
@@ -126,7 +125,7 @@ function slicemesh(m::AbstractVector{P},
             # Generate triangles:
             npts = length(pts)
             for i in 2:npts-1
-                push!(mshi, Triangle(pts[1], pts[i], pts[i+1]))
+                push!(mshi, TriangleFace(pts[1], pts[i], pts[i+1]))
                 push!(idx, k)
             end
         end

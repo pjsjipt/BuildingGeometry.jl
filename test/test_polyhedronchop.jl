@@ -88,34 +88,46 @@ let B = BuildingGeometry
 
 
     # Trivial case: no intersection, outside the bounding boxes
-    tri = Triangle(Point(10.0,0.0,0.0), Point(10.5,0.0,0.0), Point(0.0,10.5,0.0))
+    tri = TriangleFace(Point(10.0,0.0,0.0), Point(10.5,0.0,0.0), Point(0.0,10.5,0.0))
     ch  = chopwithpolyhedron(pp, tri)
     @test length(ch) == 0
 
     # Trivial case:  intersection, triangle inside polyhedron
-    tri = Triangle(Point(0.0,0.0,0.0), Point(0.5,0.0,0.0), Point(0.0,0.5,0.0))
+    tri = TriangleFace(Point(0.0,0.0,0.0), Point(0.5,0.0,0.0), Point(0.0,0.5,0.0))
     ch  = chopwithpolyhedron(pp, tri)
     @test length(ch) == 1
-    @test vertices(ch[1]) == vertices(tri)
+    @test coordinates(ch[1]) == coordinates(tri)
 
-    tri = Triangle(Point(-2.0,0.0,0.0), Point(2.0,-2.0,0.0), Point(2.0,2.0,0.0))
+    tri = TriangleFace(Point(-2.0,0.0,0.0), Point(2.0,-2.0,0.0), Point(2.0,2.0,0.0))
     ch  = chopwithpolyhedron(pp, tri)
     @test length(ch) == 2
     # The exact nodes are tricky.
     pts = [Point(-1.0, -0.5, 0.0), Point(1.0, -1.5, 0.0), Point(1.0, 1.5, 0.0),
            Point(-1.0, 0.5, 0.0)]
     # I know the solution is two triangles
-    ii = 0
-    for (k,pt) in enumerate(pts)
-        if pt==vertices(ch[1])[1]
-            ii = k
+
+    @test area(pts) ≈ sum(area.(ch))
+    
+    p1 = ConvexPolygon(pts)
+    numeq = [0,0]
+    for (i,t) in enumerate(ch)
+        for v in coordinates(t)
+            for p in pts
+                if v ≈ p
+                    numeq[i] += 1
+                end
+            end
         end
     end
-    @test vertices(ch[1])[2] ≈ pts[4]
-    @test vertices(ch[1])[3] ≈ pts[1]
+    @test numeq[1] == 3
+    @test numeq[2] == 3
+            
+    
+    #@test coordinates(ch[1])[2] ≈ pts[4]
+    #@test coordinates(ch[1])[3] ≈ pts[1]
 
-    @test vertices(ch[2])[2] ≈ pts[1]
-    @test vertices(ch[2])[3] ≈ pts[2]
+    #@test coordinates(ch[2])[2] ≈ pts[1]
+    #@test coordinates(ch[2])[3] ≈ pts[2]
     
 end
 

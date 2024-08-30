@@ -57,7 +57,7 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
     volumes that contain the infinity point can be excluded.
     =#
     bx, by, bz  = let
-        (xmin,ymin,zmin), (xmax,ymax,zmax) = coordinates.(extrema(bbox))
+        (xmin,ymin,zmin), (xmax,ymax,zmax) = bbox.min, bbox.max
         bx1, by1, bz1 = makebbox((xmin,xmax),
                                  (ymin,ymax),
                                  (zmin,zmax))
@@ -181,14 +181,14 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
 end
 
 function voronoi3d(pts::AbstractVector{<:Point{3}}; bbox=nothing, nd=8, auxpts=nothing)
-    x = [p.coords[1] for p in pts]
-    y = [p.coords[2] for p in pts]
-    z = [p.coords[3] for p in pts]
+    x = [p[1] for p in pts]
+    y = [p[2] for p in pts]
+    z = [p[3] for p in pts]
 
     if !isnothing(auxpts)
-        xa = [p.coords[1] for p in auxpts]
-        ya = [p.coords[2] for p in auxpts]
-        za = [p.coords[3] for p in auxpts]
+        xa = [p[1] for p in auxpts]
+        ya = [p[2] for p in auxpts]
+        za = [p[3] for p in auxpts]
         auxpts = (x=xa, y=ya, z=za)
     end
     
@@ -233,6 +233,8 @@ function Base.show(io::IO, msh::VoronoiMesh{Dim,T}) where {Dim,T}
     println(io, "   - Number of vertices: $(length(msh.vertices))")
 end
 
+GeometryBasics.coordinates(v::VoronoiMesh) = v.vertices
+Base.length(v::VoronoiMesh) = length(v.vertices)
 vertices(v::VoronoiMesh) = v.vertices
 nvertices(v::VoronoiMesh) = length(v.vertices)
 

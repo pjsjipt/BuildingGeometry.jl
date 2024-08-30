@@ -7,7 +7,7 @@ function genpoints2d(W, H, nw, nh)
     return w₁, h₁
 end
 function genpoints(x,y, p0, u, v) 
-    p = [(x1*u + y1*v) + p0 for x1 in x, y1 in y]
+    p = [Point(x1*u + y1*v) + p0 for x1 in x, y1 in y]
     return reshape(p, (length(x)*length(y),))
 end
 
@@ -31,18 +31,19 @@ function gentri(x,y, p0, u, v)
     
     np = nx*ny
     
-    p = [(x1*u + y1*v + p0) for x1 in x, y1 in y]
+    p = [Point(x1*u + y1*v + p0) for x1 in x, y1 in y]
     pidx = reshape(1:np, (nx, ny)) 
-    
+    PT = eltype(p)
+    TT = TriangleFace{PT}
     pp = reshape(p, (nx*ny,))
     count = 1
     ntri = (nx-1)*(ny-1) * 2
-    tri = Vector{Triangle{3,Float64}}(undef, ntri)
+    tri = Vector{TT}(undef, ntri)
     conn = zeros(Int, ntri, 3)
     for iy in 1:ny-1
         for ix in 1:nx-1
-            tri[count] = Triangle(p[ix,iy], p[ix+1,iy], p[ix+1,iy+1])
-            tri[count+1] = Triangle(p[ix,iy], p[ix+1,iy+1], p[ix,iy+1])
+            tri[count] = TT(p[ix,iy], p[ix+1,iy], p[ix+1,iy+1])
+            tri[count+1] = TT(p[ix,iy], p[ix+1,iy+1], p[ix,iy+1])
             conn[count,:] .= [pidx[ix,iy], pidx[ix+1,iy], pidx[ix+1,iy+1]]
             conn[count+1,:] .= [pidx[ix,iy], pidx[ix+1,iy+1], pidx[ix,iy+1]]
             count += 2
@@ -201,7 +202,8 @@ let
     
 
 
-    tri = [Triangle((0,0,0), (1,0,0), (1,0,1)), Triangle((0,0,0),(1,0,1),(0,0,1))]
+    tri = [TriangleFace((0,0,0), (1,0,0), (1,0,1)),
+           TriangleFace((0,0,0),(1,0,1),(0,0,1))]
     xt, xi = slicemesh(tri, [0.0, 0.5, 1.0])
     A = [sum(area.(t)) for t in xt]
 

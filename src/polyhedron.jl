@@ -71,6 +71,7 @@ Base.length(p::ConvexPolyhedron) = length(p.vertices)
 import Base.getindex
 Base.getindex(p::ConvexPolyhedron, i) = ConvexPolygon(p.vertices[p.faces[i]])
 
+Plane(p::ConvexPolyhedron,i) = Plane(p[i])
 
 nfacets(p::ConvexPolyhedron) = length(p.faces)
 

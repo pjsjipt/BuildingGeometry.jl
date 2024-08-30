@@ -1,6 +1,6 @@
 # Functions takes from Meshes.jl
 # Meshes.jl/src/utils/misc.jl
-
+using StaticArrays
 
 """
     householderbasis(n)
@@ -23,5 +23,30 @@ function householderbasis(n::Vec{3,T}) where {T<:AbstractFloat}
   u, v = [H[:, j] for j in 1:3 if j != i]
   i == 2 && ((u, v) = (v, u))
   Vec(u), Vec(v)
+end
+
+
+function boundingbox(pts::AbstractVector{Point{Dim,T}}) where {Dim,T}
+
+    pmin = MVector(ntuple(i->typemax(T), Dim))
+    pmax = MVector(ntuple(i->typemin(T), Dim))
+
+    for p in pts
+        @. pmin = min(p, pmin)
+        @. pmax = max(p, pmax)
+    end
+    return Box(Point(pmin),Point(pmax))
+    
+    
+end
+
+boundingbox(geo::AbstractGeometry) = boundingbox(coordinates(geo))
+function boundingbox(geolst::AbstractVector)
+
+    bb = boundingbox.(geolst)
+    pmin = boundingbox([b.min for b in bb])
+    pmax = boundingbox([b.max for b in bb])
+
+    return Box(pmin.min, pmax.max)
 end
 
