@@ -112,16 +112,17 @@ let
     ptsi = Point.([(-0.6,0.0,0.0), (0.6,0.0,0.0)])
     ivor, iidx = discrsurface(tri, 1:2, ptsi)
     
-    TriFace = Triangle{3,Float64}
+    TriFace = eltype(tri)
 
-    msh = TriFace[]
-    nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
+    msh = typeof(tri)[]
+    nodes = NodeInfo{Float64,Tuple{Int,Int}}[]
 
     Ne = length(pts)
     Ni = length(ptsi)
 
     for e in 1:Ne
         for i in 1:Ni
+            println((e,i))
             intersectmesh!(msh, nodes, e, evor[e], eidx[e],
                            i, ivor[i], iidx[i])
         end
@@ -157,10 +158,10 @@ let
     evor, eidx = discrsurface(tri, 1:2, epts)
     ivor, iidx = discrsurface(tri, 1:2, ipts)
 
-    TriFace = Triangle{3,Float64}
+    TriFace = eltype(tri)
 
-    msh = TriFace[]
-    nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
+    msh = eltype(tri)[]
+    nodes = NodeInfo{Float64,Tuple{Int,Int}}[]
 
     Ne = length(epts)
     Ni = length(ipts)
@@ -185,10 +186,10 @@ let
     Ave = [sum(area.(ev)) for ev in evor] 
     Avi = [sum(area.(iv)) for iv in ivor]
     
-    @test sum(Ave) ≈ 1.0
-    @test sum(Avi) ≈ 1.0
-    @test sum(Ae) ≈ 1.0
-    @test sum(Ai) ≈ 1.0
+    @test sum(Ave) ≈ 1.0m²
+    @test sum(Avi) ≈ 1.0m²
+    @test sum(Ae) ≈ 1.0m²
+    @test sum(Ai) ≈ 1.0m²
     
     @test Ave ≈ Ae
     @test Avi ≈ Ai

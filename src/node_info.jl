@@ -17,19 +17,26 @@ The `tag` field stores a tag for each side of the node. It is a tuple of
 two integers that can be used to access different sections of the total mesh.
 
 """
-struct NodeInfo{Dim,T,TSide}
+struct NodeInfo{T,TSide}
     "Area times outward normal"
-    A::Vec{Dim,T}
+    A::SVector{3,T}
     "Coordinates of the node"
-    point::Point{Dim,T}
+    point::SVector{3,T}
     "Information on node sides"
     side::TSide
     "Tag identifying each side"
     tag::Tuple{Int,Int}
 end
 
-NodeInfo(A,point,side,tag=(0,0)) = NodeInfo(A,point,side,tag)
-    
+nodeinfo(A,point,side,tag=(0,0)) = NodeInfo(ustrip.(SVector(A)),ustrip.(SVector(point)),side,(0,0))
+
+function nodeinfo(A::Vec, point::Point, side, tag=(0,0))
+    Ax = ustrip.(uconvert.(u"m", A) .* u"m")
+    Px = ustrip.(uconvert.(u"m", to(point)))
+    NodeInfo(Ax, Px, side, tag)
+end
+
+
 nodearea(n::NodeInfo) = n.A
 nodepoint(n::NodeInfo) = n.point
 extnode(n::NodeInfo) = n.side[1]

@@ -1,5 +1,5 @@
 
-
+using Infiltrator
 
 """
 `intersectmesh(tex, iex, tin, iin)`
@@ -24,13 +24,13 @@ internal triangle.
  * `itag` Tag of the internal side of the surface
 """
 function intersectmesh!(msh::AbstractVector{Tri},
-                        nodes::AbstractVector{NodeInfo{3,T,Tuple{Tex,Tin}}},
+                        nodes::AbstractVector{NodeInfo{T,Tuple{Tex,Tin}}},
                         eid::Tex, emsh, etri, iid::Tin,
                         imsh, itri, etag=0, itag=0; rtol=1e-8) where {Tri,T,Tex,Tin}
     et = sort(unique(etri))  # Independent cad mesh triangles of the external mesh
     it = sort(unique(itri))
     icm = intersect(et, it)
-
+#    @infiltrate
     if length(icm) == 0
         return
     end
@@ -50,21 +50,23 @@ function intersectmesh!(msh::AbstractVector{Tri},
                 end
                 ti = imsh[ii]
                 # Lets compute the intersection
-                pts = intersect_tri(te, ti; rtol=rtol)
+                pts = intersect_tri(te, ti)
+                println(pts)
                 if length(pts) > 2
+                    println("++++++++++++++++++++")
                     for l in firstindex(pts)+1:lastindex(pts)-1
                         new_tri = Triangle(pts[begin], pts[l], pts[l+1])
-                        tp = centroid(new_tri)
-                        A = area(new_tri)
+                        tp = ustrip.(uconvert.(u"m", to(centroid(new_tri))))
+                        A = ustrip(uconvert(u"m^2", area(new_tri)))
+                       # println(A)
                         if A > 0
-                            An = A .* normal(new_tri)
+                            An = A .* ustrip.(uconvert.(u"m",normal(new_tri)))
                             nn = NodeInfo(An, tp, (eid, iid), (etag, itag))
                             push!(msh, new_tri)
                             push!(nodes, nn)
                         end
                     end
                 end
-                
                 
             end
         end
@@ -73,28 +75,28 @@ function intersectmesh!(msh::AbstractVector{Tri},
 end
 
 
-function intersect_tri(tri1, tri2; rtol=1e-8)
+function intersect_tri(tri1, tri2)
     v1 = vertices(tri1)
     v2 = vertices(tri2)
 
     A1 = area(tri1)
     A2 = area(tri2)
-    Lref = sqrt(max(A1,A2))
-    atol = rtol*Lref
+    #Lref = sqrt(max(A1,A2))
+    #atol = rtol*Lref
     
 
     n1 = normal(tri1)
     pts = [v2[1], v2[2], v2[3]]
 
-    pts = cut_with_plane(pts, v1[1], (v1[2] - v1[1]) × n1; atol=atol)
+    pts = cut_with_plane(pts, v1[1], Meshes.ucross(v1[2] - v1[1], n1))
     if length(pts) == 0 && 
         return pts
     end
-    pts = cut_with_plane(pts, v1[2], (v1[3] - v1[2]) × n1; atol=atol)
+    pts = cut_with_plane(pts, v1[2], Meshes.ucross(v1[3] - v1[2], n1))
     if length(pts) == 0 && 
         return pts
     end
-    pts = cut_with_plane(pts, v1[3], (v1[1] - v1[3]) × n1; atol=atol)
+    pts = cut_with_plane(pts, v1[3], Meshes.ucross(v1[1] - v1[3], n1))
     return pts
     
 end

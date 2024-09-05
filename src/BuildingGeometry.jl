@@ -18,13 +18,15 @@ import Meshes: boundingbox, Plane, to, connect, SimpleMesh, discretize, simplexi
 import Meshes: ispositive, isnegative, isapproxzero
 using Unitful
 import Unitful: ustrip, unit
+import StaticArrays: SVector
+
 
 export Point, normalarea, normal_
 export ConvexPolygon, area, centroid, normal, coordinates, vertices, nvertices
 export poly2mesh, measure, volume, nfacets, boundingbox
 export ConvexPolyhedron, plane
 export cut_with_plane, chopwithpolyhedron, slicemesh, intersectmesh!, intersect_tri
-export NodeInfo, nodearea, nodepoint, nodeside, nodetag
+export NodeInfo, nodeinfo,nodearea, nodepoint, nodeside, nodetag
 export BuildingSurface, savebsurf, loadbsurf, buildsurface, buildingslice, mergemeshes
 export readraw,tri2mesh
 export addforcecontrib!, forcematrix
@@ -36,8 +38,8 @@ include("polyhedron.jl")
 include("voronoi3d.jl")
 include("chopmesh.jl")
 include("discr_surface.jl")
-#include("node_info.jl")
-#include("intersect_mesh.jl")
+include("node_info.jl")
+include("intersect_mesh.jl")
 #include("building_surface.jl")
 #include("raw.jl")
 #include("forces.jl")
