@@ -1,6 +1,7 @@
 import LinearAlgebra: norm
 import StaticArrays: SVector
 
+cmppoint(p1, p2) = Meshes.isapproxzero(norm(p1-p2))
 let
 
     #pts = Point.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
@@ -11,52 +12,53 @@ let
     # First trivial case: no intersection whatsoever
     tri1 = Triangle((0,0,0),(1,0,0),(1,1,0))
     tri2 = Triangle((10,0,0),(11,0,0),(11,1,0))
-    pts = intersect_tri(tri1, tri2)
+    tris = intersect_tri(tri1, tri2)
 
-    @test length(pts) == 0
+    @test length(tris) == 0
 
     # Second trivial test: one triangle is inside the other
     tri1 = Triangle((0,0,0),(1,0,0),(1,1,0))
     tri2 = Triangle((-2,-1,0),(2,-1,0), (2,3,0))
-    pts = intersect_tri(tri1, tri2)
+    tris = intersect_tri(tri1, tri2)
     
-    @test length(pts) == 3
+    @test length(tris) == 1
 
-    idx = findfirst(isequal(Point(0,0,0)), pts)
+    pts = vertices(tris[begin])
+    idx = findfirst(p->cmppoint(p,Point(0,0,0)), pts)
     @test !isnothing(idx)
     ifun(i,n=3) = (i-1) % n + 1
 
     v = vertices(tri1)
     for i in 1:3
-        @test v[i] == pts[ifun(idx + i - 1, 3)]
+        @test cmppoint(v[i], pts[ifun(idx + i - 1, 3)])
     end
     
     # Maybe we should tilt this
     tri1 = Triangle((0,0,0),(1,0,1),(1,1,2))
     tri2 = Triangle((-2,-1,-3),(2,-1,1), (2,3,5))
-    pts = intersect_tri(tri1, tri2)
+    tris = intersect_tri(tri1, tri2)
     
-    @test length(pts) == 3
-
-    idx = findfirst(isequal(Point(0,0,0)), pts)
+    @test length(tris) == 1
+    pts = vertices(tris[begin])
+    idx = findfirst(p -> cmppoint(p,Point(0,0,0)), pts)
     @test !isnothing(idx)
 
     v = vertices(tri1)
     for i in 1:3
-        @test v[i] == pts[ifun(idx + i - 1, 3)]
+        @test cmppoint(v[i], pts[ifun(idx + i - 1, 3)])
     end
 
     # Let's invert the search
-    pts = intersect_tri(tri2, tri1)
+    tris = intersect_tri(tri2, tri1)
     
-    @test length(pts) == 3
-
-    idx = findfirst(isequal(Point(0,0,0)), pts)
+    @test length(tris) == 1
+    pts = vertices(tris[begin])
+    idx = findfirst(p->cmppoint(p,Point(0,0,0)), pts)
     @test !isnothing(idx)
 
     v = vertices(tri1)
     for i in 1:3
-        @test v[i] == pts[ifun(idx + i - 1, 3)]
+        @test cmppoint(v[i], pts[ifun(idx + i - 1, 3)])
     end
 
 
@@ -64,41 +66,34 @@ let
     tri1 = Triangle((0,0,0),(1,0,1),(1,1,2))
     tri2 = Triangle((0,0,0),(2,0,2),(2,2,4))
 
-    pts = intersect_tri(tri1, tri2)
+    tris = intersect_tri(tri1, tri2)
 
-    @test length(pts) == 3
-
-    idx = findfirst(isequal(Point(0,0,0)), pts)
+    @test length(tris) == 1
+    pts = vertices(tris[begin])
+    idx = findfirst(p->cmppoint(p,Point(0,0,0)), pts)
     @test !isnothing(idx)
     v = vertices(tri1)
     for i in 1:3
-        @test v[i] == pts[ifun(idx + i - 1, 3)]
+        @test cmppoint(v[i], pts[ifun(idx + i - 1, 3)])
     end
 
     # Let's try something harder
     tri1 = Triangle((0,0,0),(1,0,1),(1,1,2))
     tri2 = Triangle((0.5,-0.5,0.),(1.5,0.,1.5),(0.5, 1.0, 1.5))
 
-    pts = intersect_tri(tri1, tri2)
+    tris = intersect_tri(tri1, tri2)
 
-    @test length(pts) == 5
-    idx = findfirst(isapprox(Point(1,0,1)), pts)
-    @test pts[idx] ≈ Point(1,0,1)
-    @test pts[ifun(idx+1,5)] ≈ Point(1.0, 0.5, 1.5)
-    @test pts[ifun(idx+2,5)] ≈ Point(0.75, 0.75, 1.5)
-    @test pts[ifun(idx+3,5)] ≈ Point(0.5, 0.5, 1.0)
-    @test pts[ifun(idx+4,5)] ≈ Point(0.5, 0.0, 0.5)
+    px = [Point(1,0,1), Point(1.0, 0.5, 1.5), Point(0.75, 0.75, 1.5),
+          Point(0.5, 0.5, 1.0), Point(0.5, 0.0, 0.5)]
+
+    poly = ConvexPolygon(px)
+
+    @test area(poly) ≈ sum(area.(tris))
 
     # We will invert this again...
-    pts = intersect_tri(tri2, tri1)
-
-    @test length(pts) == 5
-    idx = findfirst(isapprox(Point(1,0,1)), pts)
-    @test pts[idx] ≈ Point(1,0,1)
-    @test pts[ifun(idx+1,5)] ≈ Point(1.0, 0.5, 1.5)
-    @test pts[ifun(idx+2,5)] ≈ Point(0.75, 0.75, 1.5)
-    @test pts[ifun(idx+3,5)] ≈ Point(0.5, 0.5, 1.0)
-    @test pts[ifun(idx+4,5)] ≈ Point(0.5, 0.0, 0.5)
+    tris = intersect_tri(tri2, tri1)
+    @test area(poly) ≈ sum(area.(tris))
+    
 
 
     #===================================================================
@@ -112,9 +107,7 @@ let
     ptsi = Point.([(-0.6,0.0,0.0), (0.6,0.0,0.0)])
     ivor, iidx = discrsurface(tri, 1:2, ptsi)
     
-    TriFace = eltype(tri)
-
-    msh = typeof(tri)[]
+    msh = eltype(tri)[]
     nodes = NodeInfo{Float64,Tuple{Int,Int}}[]
 
     Ne = length(pts)
@@ -122,7 +115,6 @@ let
 
     for e in 1:Ne
         for i in 1:Ni
-            println((e,i))
             intersectmesh!(msh, nodes, e, evor[e], eidx[e],
                            i, ivor[i], iidx[i])
         end

@@ -41,8 +41,6 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
         bbox = Box(bbox1.min - nd*u, bbox1.max + nd*u)
     end
 
-    Lref = norm(bbpts.max-bbpts.min)
-    
     vor = voronoi3d(pts, bbox=bbox)
 
     if return_vor

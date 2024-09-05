@@ -158,6 +158,8 @@ function cut_with_plane(pts, p0::Point, n::Vec, circ=true)
     return out
 end
 
+
+#using Infiltrator
 """
 `chopwithpolyhedron(poly, tri; atol=1e-8)`
 
@@ -183,7 +185,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron, tri::Triangle)
         pmin,pmax = coords.(extrema(boundingbox(poly)))
         tmin,tmax = coords.(extrema(boundingbox(tri)))
         if pmin.x > tmax.x || pmin.y > tmax.y || pmin.z > tmax.z ||
-            tmin.x > pmax.x || tmin.y > pmax.y || tmin.z > tmax.z
+            tmin.x > pmax.x || tmin.y > pmax.y || tmin.z > pmax.z
             return TT[]
         end
         # Check if every triangle vertex is inside the Polyhedron.
@@ -210,7 +212,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron, tri::Triangle)
     # 2. We will sweep this polygon. If a vertex is outside the plane,
     #    this vertex we need to see if the previous vert
 
-
+    
     nf = nfacets(poly)
     t1 = [tri]
     for i in 1:nf
@@ -219,6 +221,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron, tri::Triangle)
         t2 = TT[]
         for t in t1
             tx = cut_with_plane(t, pl)
+            # @infiltrate
             for x in tx
                 push!(t2, x)
             end

@@ -13,7 +13,7 @@ internal triangle.
 
 # Arguments
  * `msh` List of triangles making up the mesh being built
- * `nodes` `NodeInfo` vector of mesh being build
+ * `nodes` `NodeInfo` vector of mesh being built
  * `eid` Identifier of external pressure tap
  * `emsh` Triangles corresponding to an external pressure tap
  * `etri` Index of original mesh triangle that contains `emsh`.
@@ -26,77 +26,110 @@ internal triangle.
 function intersectmesh!(msh::AbstractVector{Tri},
                         nodes::AbstractVector{NodeInfo{T,Tuple{Tex,Tin}}},
                         eid::Tex, emsh, etri, iid::Tin,
-                        imsh, itri, etag=0, itag=0; rtol=1e-8) where {Tri,T,Tex,Tin}
+                        imsh, itri, etag=0, itag=0) where {Tri,T,Tex,Tin}
+
+    # This function finds the intersection of two triangular meshes of the same
+    # surface (`emsh` and `imsh`) defined by a vector of triangles (`msh`).
+    # The two meshes correspond to the two sides of the surface.
+    # Not only the meshes of both sides are needed: the index to the original
+    # triangle in the cad mesh (`msh`) is also required (`etri` and `itri`).
+
+    # First we need to check if there are any triangles in common between both meshes:
+    
     et = sort(unique(etri))  # Independent cad mesh triangles of the external mesh
     it = sort(unique(itri))
     icm = intersect(et, it)
-#    @infiltrate
-    if length(icm) == 0
+
+    if length(icm) == 0 # No triangles in common. Do nothing
         return
     end
-    lidx = lastindex(msh)
-    for k in icm
+
+    for k in icm # We will check each of the common triangles
         for ie in eachindex(etri)
             e = etri[ie]
-            if e!= k
+            if e!= k # Haven't found triangle `k` try next triangle
                 continue
             end
             
             te = emsh[ie]
-            for ii in eachindex(itri)
+            # Now we will search for the triangle in `itri` that corresponds to `k`
+            for ii in eachindex(itri) 
                 i = itri[ii]
-                if i != k
+                if i != k # Not it! Try next
                     continue
                 end
-                ti = imsh[ii]
+                ti = imsh[ii]  
+                # `ti` and `te` are part of triangle `msh[k]`.
+                # Now we can try to intersect them.
                 # Lets compute the intersection
-                pts = intersect_tri(te, ti)
-                println(pts)
-                if length(pts) > 2
-                    println("++++++++++++++++++++")
-                    for l in firstindex(pts)+1:lastindex(pts)-1
-                        new_tri = Triangle(pts[begin], pts[l], pts[l+1])
-                        tp = ustrip.(uconvert.(u"m", to(centroid(new_tri))))
-                        A = ustrip(uconvert(u"m^2", area(new_tri)))
-                       # println(A)
+                tri_int = intersect_tri(te, ti) # Let's see if we hava an intersection
+                if length(tri_int) > 0
+                    for t in tri_int
+                        # Get the centroid of the intersection in m without units
+                        tp = ustrip.(uconvert.(u"m", to(centroid(t))))
+                        # Get the area in m² without units
+                        A = ustrip(uconvert(u"m^2", area(t)))
+                        # Let's make shure this is a triangle and not
+                        # just an edge:
                         if A > 0
-                            An = A .* ustrip.(uconvert.(u"m",normal(new_tri)))
+                            An = A .* ustrip.(uconvert.(u"m",normal(t)))
                             nn = NodeInfo(An, tp, (eid, iid), (etag, itag))
-                            push!(msh, new_tri)
+                            push!(msh, t)
                             push!(nodes, nn)
                         end
                     end
                 end
-                
             end
-        end
+        end 
     end
     return
 end
 
 
 function intersect_tri(tri1, tri2)
+
+    # The basic algorithm is to take one triangle as a reference
+    # and then take eachside of the triangle as a plane normal
+    # to the triangle. This plane will be used to slice the reference
+    # triangle.
     v1 = vertices(tri1)
     v2 = vertices(tri2)
 
-    A1 = area(tri1)
-    A2 = area(tri2)
-    #Lref = sqrt(max(A1,A2))
-    #atol = rtol*Lref
     
-
     n1 = normal(tri1)
     pts = [v2[1], v2[2], v2[3]]
 
-    pts = cut_with_plane(pts, v1[1], Meshes.ucross(v1[2] - v1[1], n1))
-    if length(pts) == 0 && 
-        return pts
+
+    # First side
+    tri1 = let
+        pl = Plane(v1[1], Meshes.ucross(v1[2] - v1[1], n1))
+        cut_with_plane(tri2, pl)
     end
-    pts = cut_with_plane(pts, v1[2], Meshes.ucross(v1[3] - v1[2], n1))
-    if length(pts) == 0 && 
-        return pts
+    # Second side.
+    # Remember we might have 1 or 2 triangles
+    tri2 = let
+        pl = Plane(v1[2], Meshes.ucross(v1[3]-v1[2], n1))
+        tri = eltype(tri1)[]
+        for t in tri1
+            tx = cut_with_plane(t, pl)
+            for t1 in tx
+                push!(tri, t1)
+            end
+        end
+        tri
     end
-    pts = cut_with_plane(pts, v1[3], Meshes.ucross(v1[1] - v1[3], n1))
-    return pts
+
+    # Third and last side
+    return let
+        pl = Plane(v1[3], Meshes.ucross(v1[1]-v1[3], n1))
+        tri = eltype(tri1)[]
+        for t in tri2
+            tx = cut_with_plane(t, pl)
+            for t1 in tx
+                push!(tri, t1)
+            end
+        end
+        tri
+    end
     
 end
