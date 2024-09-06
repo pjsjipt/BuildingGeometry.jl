@@ -1,7 +1,6 @@
 using BuildingGeometry
 using Test
 
-import Meshes: Point, Vec,  Triangle
 
 @testset "BuildingGeometry.jl" begin
 

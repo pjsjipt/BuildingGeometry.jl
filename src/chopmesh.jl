@@ -1,12 +1,13 @@
 # Choping triangles with Convex polyhedrons
 import StaticArrays: SVector
 
-function plane_side(p, pl_p0, pl_n)
+function plane_side(p::SVec{Dim,T}, pl_p0::SVec{Dim,T}, pl_n::SVec{Dim,T};
+                    atol=atolf(T)) where {Dim,T}
 
-    s = udot(p-pl_p0, pl_n)
-    if isapproxzero(s)
+    s = (p-pl_p0) ⋅ pl_n
+    if abs(s) < atol
         return 0
-    elseif s > zero(s)
+    elseif s > 0
         return 1
     else
         return -1
@@ -15,15 +16,16 @@ end
     
 @inline idxn(i) = (i % 3) + 1
 @inline idxp(i) = (i+1) % 3 + 1
-function cut_with_plane(tri::Triangle, plane::Plane)
+function cut_with_plane(tri::Tri{Dim,T}, plane::Plane{Dim,T};
+                        atol=atolf(T)) where {Dim,T}
 
-    out = typeof(tri)[]
+    out = Tri{Dim,T}[]
     p = vertices(tri)
 
     p0 = plane.p
     n = normal(plane)
     
-    s = plane_side.(p, Ref(p0), Ref(n))
+    s = plane_side.(p, Ref(p0), Ref(n), atol=atol)
 
     # A plane can be defined by a point and its normal
     # Funcion `plane_side` can be used to check if a point is
@@ -60,9 +62,9 @@ function cut_with_plane(tri::Triangle, plane::Plane)
         ipr = idxp(idx)
         pi = intersectpoint(n, p0, p[inx], p[ipr])
         if s[inx] < 0
-            push!(out, Triangle(p[idx], p[inx], pi))
+            push!(out, Tri(p[idx], p[inx], pi))
         else
-            push!(out, Triangle(p[idx], pi, p[inx]))
+            push!(out, Tri(p[idx], pi, p[inx]))
         end
            
     elseif sum(s .== 1) == 2
@@ -72,7 +74,7 @@ function cut_with_plane(tri::Triangle, plane::Plane)
         pi1 = intersectpoint(n, p0, p[idx], p[inx])
         pi2 = intersectpoint(n, p0, p[idx], p[ipr])
 
-        push!(out, Triangle(p[idx], pi1, pi2))
+        push!(out, Tri(p[idx], pi1, pi2))
     else
         idx = findfirst(isequal(1), s)
         inx = idxn(idx)
@@ -80,8 +82,8 @@ function cut_with_plane(tri::Triangle, plane::Plane)
         pi1 = intersectpoint(n, p0, p[idx], p[inx])
         pi2 = intersectpoint(n, p0, p[idx], p[ipr])
 
-        push!(out, Triangle(pi1, p[inx], pi2))
-        push!(out, Triangle(pi2, p[inx], p[ipr]))
+        push!(out, Tri(pi1, p[inx], pi2))
+        push!(out, Tri(pi2, p[inx], p[ipr]))
     end
 
     return out
@@ -101,15 +103,14 @@ and the plane will be added.
 This function is used throughout this package for many types of operations.
 
 """
-function cut_with_plane(pts, p0::Point, n::Vec, circ=true)
+function cut_with_plane(pts::AbstractVector{SVec{Dim,T}},
+                        p0::SVec{Dim,T}, n::SVec{Dim,T}, circ=true;
+                        atol=atolf(T)) where {Dim,T}
 
-    TP = eltype(pts)
-    TV  = typeof(to(p0))
-    T  = typeof(to(p0)[1])
     
     npts = length(pts)
     
-    out = TP[]
+    out = SVec{Dim,T}[]
     
     if npts < 1
         return out
@@ -117,8 +118,8 @@ function cut_with_plane(pts, p0::Point, n::Vec, circ=true)
     
     zz = zero(T)
     p1 = pts[begin]
-    slast = udot(p1 - p0,  n)
-    if isapprox(slast, zero(T))
+    slast = (p1 - p0)⋅n
+    if isapprox(slast, zero(T), atol=atol)
         slast = zero(T)
     end
     if slast <= zero(T)
@@ -136,14 +137,14 @@ function cut_with_plane(pts, p0::Point, n::Vec, circ=true)
  
     for i in idx
         p2 = pts[i]
-        snew = udot(p2 - p0, n)
-        if isapprox(snew, zero(T))
+        snew = (p2 - p0)⋅n
+        if isapprox(snew, zero(T), atol=atol)
             snew = zero(T)
         end
        
         if snew == zero(T)
             push!(out, p2)
-        elseif ustrip(snew * slast)  < 0
+        elseif (snew * slast)  < 0
             px = intersectpoint(n, p0, p1, p2)
             push!(out, px)
             if snew < zero(T)
@@ -159,7 +160,6 @@ function cut_with_plane(pts, p0::Point, n::Vec, circ=true)
 end
 
 
-#using Infiltrator
 """
 `chopwithpolyhedron(poly, tri; atol=1e-8)`
 
@@ -177,15 +177,16 @@ chopping away the parts of the triangle that are outside the polyhedron.
 The function returns a list of triangles that are inside the polyhedron.
 
 """
-function chopwithpolyhedron(poly::ConvexPolyhedron, tri::Triangle)
+function chopwithpolyhedron(poly::ConvexPolyhedron{T},
+                            tri::Tri{3,T}; atol=atolf(T)) where {T}
     
     # First we will check if there is any chance of intersection
-    TT = typeof(tri)
+    TT = Tri{3,T}
     let
-        pmin,pmax = coords.(extrema(boundingbox(poly)))
-        tmin,tmax = coords.(extrema(boundingbox(tri)))
-        if pmin.x > tmax.x || pmin.y > tmax.y || pmin.z > tmax.z ||
-            tmin.x > pmax.x || tmin.y > pmax.y || tmin.z > pmax.z
+        pmin,pmax = extrema(vertices(poly))
+        tmin,tmax = extrema(vertices(tri))
+        if pmin[1] > tmax[1] || pmin[2] > tmax[2] || pmin[3] > tmax[3] ||
+            tmin[1] > pmax[1] || tmin[2] > pmax[2] || tmin[3] > pmax[3]
             return TT[]
         end
         # Check if every triangle vertex is inside the Polyhedron.
@@ -220,7 +221,7 @@ function chopwithpolyhedron(poly::ConvexPolyhedron, tri::Triangle)
         pl = Plane(vertices(face)[begin], normal(face))
         t2 = TT[]
         for t in t1
-            tx = cut_with_plane(t, pl)
+            tx = cut_with_plane(t, pl, atol=atol)
             # @infiltrate
             for x in tx
                 push!(t2, x)
@@ -242,7 +243,7 @@ given by points `p₁` and `p₂`.
 This function assumes that there is an intersection and the segment is not
 contained in the plane.
 """
-function intersectpoint(n::Vec, p₀::Point, p₁::Point, p₂::Point)
+function intersectpoint(n::SVec, p₀::SVec, p₁::SVec, p₂::SVec)
     Δp = p₂ - p₁
     ξ = ((p₀ - p₁)⋅n) / (Δp⋅n)
     return p₁ + ξ*Δp

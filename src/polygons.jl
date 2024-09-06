@@ -1,9 +1,9 @@
 
 
 using StaticArrays
-
-struct ConvexPolygon{M<:Manifold,C<:CRS,R<:Ring{M,C}} <: Polygon{M,C}
-    contour::R
+import CircularArrays: CircularVector
+struct ConvexPolygon{Dim,T} <: AbstractBuildGeom
+    contour::CircularVector{SVec{Dim,T}}
 end
 """
 `ConvexPolygon(contour)`
@@ -17,21 +17,21 @@ Create a convex polygon.
 """
 
 ConvexPolygon(x::AbstractVector, y::AbstractVector) =
-    ConvexPolygon([Point(xx, yy) for (xx,yy) in zip(x,y)])
+    ConvexPolygon([SVec(xx, yy) for (xx,yy) in zip(x,y)])
 
 ConvexPolygon(x::AbstractVector, y::AbstractVector, z::AbstractVector) =
-    ConvexPolygon([Point(xx, yy,zz) for (xx,yy,zz) in zip(x,y,z)])
+    ConvexPolygon([SVec(xx, yy, zz) for (xx,yy,zz) in zip(x,y,z)])
 
-function ConvexPolygon(pts::AbstractVector{P}) where {P<:Point}
-    ConvexPolygon(Ring(pts))
+function ConvexPolygon(pts::AbstractVector{P}) where {P<:SVec}
+    ConvexPolygon(CircularVector(pts))
 end
 
-ConvexPolygon(pts::AbstractVector{TP}) where {TP<:Tuple} = ConvexPolygon(Point.(pts))
-ConvexPolygon(pts::Vararg{P}) where {P<:Point} = ConvexPolygon(collect(pts))
+ConvexPolygon(pts::AbstractVector{TP}) where {TP<:Tuple} = ConvexPolygon(SVec.(pts))
+ConvexPolygon(pts::Vararg{P}) where {P<:SVec} = ConvexPolygon(collect(pts))
 
-Meshes.vertices(p::ConvexPolygon) = vertices(p.contour)
-Meshes.nvertices(p::ConvexPolygon) = nvertices(p.contour)
-Meshes.rings(p::ConvexPolygon) = [p.contour]
+vertices(p::ConvexPolygon) = p.contour
+nvertices(p::ConvexPolygon) = length(p.contour)
+rings(p::ConvexPolygon) = [p.contour]
                                      
 """
 `normalarea(p)`
@@ -45,10 +45,6 @@ function normalarea(p::ConvexPolygon)
          for i in firstindex(pts)+1:lastindex(pts) ) ./ 2
 end
 
-function normal_(p::ConvexPolygon)
-    na = normalarea(p)
-    return normalize(na)
-end
 
 
 #function Meshes.normal(p::ConvexPolygon{2})
@@ -57,15 +53,9 @@ end
 #end
 
 
-Meshes.area(p::ConvexPolygon) = norm(normalarea(p))
-Meshes.measure(p::ConvexPolygon) = area(p)
+area(p::ConvexPolygon) = norm(normalarea(p))
 
-function Meshes.normal(p::ConvexPolygon)
-    pts = vertices(p)
-    unormalize(  sum( ucross(pts[i-1]-pts[begin], pts[i]-pts[begin])
-                      for i in firstindex(pts)+1:lastindex(pts) )    )
-    
-end
+normal(p::ConvexPolygon) = normalize(normalarea(p))
 
 """
 `pnpoly(poly, p)`
@@ -74,14 +64,14 @@ Determine if a point is inside a polygon. If a point is on the boundary of the p
 this function might return `true` or `false` depending on floating point errors and
 such.
 """
-function pnpoly(poly::ConvexPolygon{𝔼{2}}, p::Point)
+function pnpoly(p::SVec{2,T}, poly::ConvexPolygon{2,T}; atol=atolf(T)) where {T}
 
     v = vertices(poly)
 
     v₁ = v[begin]
 
     for v₂ in v[begin+1:end+1]
-        s = ustrip(udot( (v₂ - v₁),  (p - v₁) ))
+        s = (v₂ - v₁)⋅(p - v₁)
         if s < 0
             return false
         end
@@ -91,7 +81,7 @@ function pnpoly(poly::ConvexPolygon{𝔼{2}}, p::Point)
     
 end
 
-function pnpoly(poly::ConvexPolygon{𝔼{3}}, p::Point)
+function pnpoly(p::SVec{3,T}, poly::ConvexPolygon{3,T}; atol=atolf(T)) where {T}
 
     
     v = vertices(poly)
@@ -100,7 +90,7 @@ function pnpoly(poly::ConvexPolygon{𝔼{3}}, p::Point)
     pl = Plane(v[1], n) # Plane
 
     # Check whether the point is in the plane of polygon
-    if p ∉ pl
+    if pnplane(p, pl, atol=atol)
         return false
     end
 
@@ -108,7 +98,7 @@ function pnpoly(poly::ConvexPolygon{𝔼{3}}, p::Point)
     v₁ = v[begin]
 
     for v₂ in v[begin+1:end+1]
-        s = ustrip(udot( (v₂ - v₁),  (p - v₁) ))
+        s = (v₂ - v₁)⋅(p - v₁)
         if s < 0
             return false
         end
@@ -118,35 +108,32 @@ function pnpoly(poly::ConvexPolygon{𝔼{3}}, p::Point)
     
 end
                 
-Meshes.in(pt::Point, p::ConvexPolygon) = pnpoly(p, pt)
+Base.in(pt::SVec, p::ConvexPolygon) = pnpoly(pt, p)
 
 
-function Meshes.centroid(p::ConvexPolygon)
+function centroid(p::ConvexPolygon{Dim,T}) where {Dim,T}
     pts = vertices(p)
 
-    p1 = to(pts[begin])  # Let's work with vectors
-    up1 = ustrip.(p1)
-    un = unit(p1[1])
-    T = typeof(ustrip(p1[1])) # Type (float)
-    N = length(p1)
+    p1 = pts[begin]  # Let's work with vectors
+    npts = nvertices(p)
     A = zero(T)
-    CA = zero(ustrip.(p1))
+    CA = zero(p1)
     for i in firstindex(pts)+1:lastindex(pts)-1
-        u = ustrip.(pts[i]-pts[1])
+        u = pts[i]-pts[1]
         v = ustrip.(pts[i+1]-pts[1])
-        
         Ai = norm(u × v) / 2  # Area of the triangle
         A += Ai
         # Compute the centroid of the triangle: mean of the coordinates
-        Ci = ustrip.( p1 + to(pts[i]) + to(pts[i+1]) ) ./ 3
+        Ci = ( p1 + pts[i] + pts[i+1]) ./ 3
         CA += Ai .* Ci
     end
-    return Point(  ((CA./A) .* un )... ) 
+    return SVec(CA./A) 
             
 end
 
 
 
+#=
 function Meshes.simplexify(poly::ConvexPolygon)
 
     pts = vertices(poly)
@@ -156,10 +143,10 @@ function Meshes.simplexify(poly::ConvexPolygon)
   
     
 end
+=#
+#discretize(poly::ConvexPolygon, method=nothing) = simplexify(poly)
 
-Meshes.discretize(poly::ConvexPolygon, method=nothing) = simplexify(poly)
-
-Meshes.plane(p::ConvexPolygon) = Plane(vertices(p)[begin], normal(p))
+plane(p::ConvexPolygon) = Plane(vertices(p)[begin], normal(p))
 
 
 

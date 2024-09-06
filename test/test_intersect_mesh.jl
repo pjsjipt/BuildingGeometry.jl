@@ -1,30 +1,31 @@
 import LinearAlgebra: norm
 import StaticArrays: SVector
 
-cmppoint(p1, p2) = Meshes.isapproxzero(norm(p1-p2))
+cmppoint(p1::SVec{Dim,T}, p2::SVec{Dim,T}, atol=atolf(T)) where{Dim,T} =
+    isapprox(norm(p1-p2), zero(T), atol=atol)
 let
 
-    #pts = Point.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
-    #tri = [Triangle((-1,-1,0), (1,-1,0), (1,1,0)), Triangle((-1,-1,0),(1,1,0),(0,1,0))]
+    #pts = SVec.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
+    #tri = [Tri((-1,-1,0), (1,-1,0), (1,1,0)), Tri((-1,-1,0),(1,1,0),(0,1,0))]
     #vor = discrsurface(tri, 1:2, pts)
 
     # Triangle intersection 
     # First trivial case: no intersection whatsoever
-    tri1 = Triangle((0,0,0),(1,0,0),(1,1,0))
-    tri2 = Triangle((10,0,0),(11,0,0),(11,1,0))
+    tri1 = Tri((0.0,0,0),  (1.0,0,0), (1.0,1,0))
+    tri2 = Tri((10.0,0,0), (11.0,0,0),(11.0,1,0))
     tris = intersect_tri(tri1, tri2)
 
     @test length(tris) == 0
 
     # Second trivial test: one triangle is inside the other
-    tri1 = Triangle((0,0,0),(1,0,0),(1,1,0))
-    tri2 = Triangle((-2,-1,0),(2,-1,0), (2,3,0))
+    tri1 = Tri((0.0,0,0),(1.0,0,0),(1.0,1,0))
+    tri2 = Tri((-2.0,-1,0),(2.0,-1,0), (2.0,3,0))
     tris = intersect_tri(tri1, tri2)
     
     @test length(tris) == 1
 
     pts = vertices(tris[begin])
-    idx = findfirst(p->cmppoint(p,Point(0,0,0)), pts)
+    idx = findfirst(p->cmppoint(p,SVec(0.0,0,0)), pts)
     @test !isnothing(idx)
     ifun(i,n=3) = (i-1) % n + 1
 
@@ -34,13 +35,13 @@ let
     end
     
     # Maybe we should tilt this
-    tri1 = Triangle((0,0,0),(1,0,1),(1,1,2))
-    tri2 = Triangle((-2,-1,-3),(2,-1,1), (2,3,5))
+    tri1 = Tri((0.,0,0),(1.,0,1),(1.,1,2))
+    tri2 = Tri((-2.,-1,-3),(2.,-1,1), (2.,3,5))
     tris = intersect_tri(tri1, tri2)
     
     @test length(tris) == 1
     pts = vertices(tris[begin])
-    idx = findfirst(p -> cmppoint(p,Point(0,0,0)), pts)
+    idx = findfirst(p -> cmppoint(p,SVec(0.,0,0)), pts)
     @test !isnothing(idx)
 
     v = vertices(tri1)
@@ -53,7 +54,7 @@ let
     
     @test length(tris) == 1
     pts = vertices(tris[begin])
-    idx = findfirst(p->cmppoint(p,Point(0,0,0)), pts)
+    idx = findfirst(p->cmppoint(p,SVec(0.0,0,0)), pts)
     @test !isnothing(idx)
 
     v = vertices(tri1)
@@ -63,14 +64,14 @@ let
 
 
     # Lets see what happens if the triangles share part of an edge
-    tri1 = Triangle((0,0,0),(1,0,1),(1,1,2))
-    tri2 = Triangle((0,0,0),(2,0,2),(2,2,4))
+    tri1 = Tri((0.,0,0),(1.,0,1),(1.,1,2))
+    tri2 = Tri((0.,0,0),(2.,0,2),(2.,2,4))
 
     tris = intersect_tri(tri1, tri2)
 
     @test length(tris) == 1
     pts = vertices(tris[begin])
-    idx = findfirst(p->cmppoint(p,Point(0,0,0)), pts)
+    idx = findfirst(p->cmppoint(p,SVec(0.,0,0)), pts)
     @test !isnothing(idx)
     v = vertices(tri1)
     for i in 1:3
@@ -78,13 +79,13 @@ let
     end
 
     # Let's try something harder
-    tri1 = Triangle((0,0,0),(1,0,1),(1,1,2))
-    tri2 = Triangle((0.5,-0.5,0.),(1.5,0.,1.5),(0.5, 1.0, 1.5))
+    tri1 = Tri((0.,0,0),(1.,0,1),(1.,1,2))
+    tri2 = Tri((0.5,-0.5,0.),(1.5,0.,1.5),(0.5, 1.0, 1.5))
 
     tris = intersect_tri(tri1, tri2)
 
-    px = [Point(1,0,1), Point(1.0, 0.5, 1.5), Point(0.75, 0.75, 1.5),
-          Point(0.5, 0.5, 1.0), Point(0.5, 0.0, 0.5)]
+    px = [SVec(1.,0,1), SVec(1.0, 0.5, 1.5), SVec(0.75, 0.75, 1.5),
+          SVec(0.5, 0.5, 1.0), SVec(0.5, 0.0, 0.5)]
 
     poly = ConvexPolygon(px)
 
@@ -100,11 +101,11 @@ let
     # Testing mesh intersection
     ====================================================================#
 
-    pts = Point.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
-    tri = [Triangle((-1,-1,0), (1,-1,0), (1,1,0)), Triangle((-1,-1,0),(1,1,0),(-1,1,0))]
+    pts = SVec.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
+    tri = [Tri((-1.,-1,0), (1.,-1,0), (1.,1,0)), Tri((-1.,-1,0),(1.,1,0),(-1.,1,0))]
     evor, eidx = discrsurface(tri, 1:2, pts)
 
-    ptsi = Point.([(-0.6,0.0,0.0), (0.6,0.0,0.0)])
+    ptsi = SVec.([(-0.6,0.0,0.0), (0.6,0.0,0.0)])
     ivor, iidx = discrsurface(tri, 1:2, ptsi)
     
     msh = eltype(tri)[]
@@ -143,9 +144,9 @@ let
     
     # Let's get more points and a more complex geometry
 
-    tri = [Triangle((0,0,0), (1,0,0), (1,1,0)), Triangle((0,0,0),(1,1,0),(0,1,0))]
-    epts = Point.(rand(10), rand(10), 0.0)
-    ipts = Point.(rand(5), rand(5), 0.0)
+    tri = [Tri((0.,0,0), (1.,0,0), (1.,1,0)), Tri((0.,0,0),(1.,1,0),(0.,1,0))]
+    epts = SVec.(rand(10), rand(10), 0.0)
+    ipts = SVec.(rand(5), rand(5), 0.0)
 
     evor, eidx = discrsurface(tri, 1:2, epts)
     ivor, iidx = discrsurface(tri, 1:2, ipts)
@@ -178,10 +179,10 @@ let
     Ave = [sum(area.(ev)) for ev in evor] 
     Avi = [sum(area.(iv)) for iv in ivor]
     
-    @test sum(Ave) ≈ 1.0m²
-    @test sum(Avi) ≈ 1.0m²
-    @test sum(Ae) ≈ 1.0m²
-    @test sum(Ai) ≈ 1.0m²
+    @test sum(Ave) ≈ 1.0
+    @test sum(Avi) ≈ 1.0
+    @test sum(Ae) ≈ 1.0
+    @test sum(Ai) ≈ 1.0
     
     @test Ave ≈ Ae
     @test Avi ≈ Ai

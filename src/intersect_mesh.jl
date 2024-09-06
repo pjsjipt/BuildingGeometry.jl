@@ -1,5 +1,4 @@
 
-using Infiltrator
 
 """
 `intersectmesh(tex, iex, tin, iin)`
@@ -23,11 +22,12 @@ internal triangle.
  * `etag` Tag of the external side of the surface
  * `itag` Tag of the internal side of the surface
 """
-function intersectmesh!(msh::AbstractVector{Tri},
+function intersectmesh!(msh::AbstractVector{Tri{3,T}},
                         nodes::AbstractVector{NodeInfo{T,Tuple{Tex,Tin}}},
                         eid::Tex, emsh, etri, iid::Tin,
-                        imsh, itri, etag=0, itag=0) where {Tri,T,Tex,Tin}
-
+                        imsh, itri, etag=0, itag=0;
+                        atol=atolf(T)) where {T,Tex,Tin}
+    
     # This function finds the intersection of two triangular meshes of the same
     # surface (`emsh` and `imsh`) defined by a vector of triangles (`msh`).
     # The two meshes correspond to the two sides of the surface.
@@ -62,17 +62,18 @@ function intersectmesh!(msh::AbstractVector{Tri},
                 # `ti` and `te` are part of triangle `msh[k]`.
                 # Now we can try to intersect them.
                 # Lets compute the intersection
-                tri_int = intersect_tri(te, ti) # Let's see if we hava an intersection
+                tri_int = intersect_tri(te, ti, atol=atol) # Let's see if we hava
+                        # an intersection
                 if length(tri_int) > 0
                     for t in tri_int
                         # Get the centroid of the intersection in m without units
-                        tp = ustrip.(uconvert.(u"m", to(centroid(t))))
+                        tp = centroid(t)
                         # Get the area in m² without units
-                        A = ustrip(uconvert(u"m^2", area(t)))
+                        A = area(t)
                         # Let's make shure this is a triangle and not
                         # just an edge:
-                        if A > 0
-                            An = A .* ustrip.(uconvert.(u"m",normal(t)))
+                        if A > atol^2
+                            An = normalarea(t)
                             nn = NodeInfo(An, tp, (eid, iid), (etag, itag))
                             push!(msh, t)
                             push!(nodes, nn)
@@ -86,32 +87,33 @@ function intersectmesh!(msh::AbstractVector{Tri},
 end
 
 
-function intersect_tri(tri1, tri2)
-
+function intersect_tri(tri1::Tri{Dim,T}, tri2::Tri{Dim,T};
+                       atol=atolf(T)) where {Dim,T}
+    
     # The basic algorithm is to take one triangle as a reference
     # and then take eachside of the triangle as a plane normal
     # to the triangle. This plane will be used to slice the reference
     # triangle.
     v1 = vertices(tri1)
     v2 = vertices(tri2)
-
-    
+    TT = Tri{Dim,T}
+        
     n1 = normal(tri1)
     pts = [v2[1], v2[2], v2[3]]
 
 
     # First side
     tri1 = let
-        pl = Plane(v1[1], Meshes.ucross(v1[2] - v1[1], n1))
-        cut_with_plane(tri2, pl)
+        pl = Plane(v1[1], (v1[2] - v1[1])×n1)
+        cut_with_plane(tri2, pl, atol=atol)
     end
     # Second side.
     # Remember we might have 1 or 2 triangles
     tri2 = let
-        pl = Plane(v1[2], Meshes.ucross(v1[3]-v1[2], n1))
-        tri = eltype(tri1)[]
+        pl = Plane(v1[2], (v1[3]-v1[2])×n1)
+        tri = TT[]
         for t in tri1
-            tx = cut_with_plane(t, pl)
+            tx = cut_with_plane(t, pl, atol=atol)
             for t1 in tx
                 push!(tri, t1)
             end
@@ -121,8 +123,8 @@ function intersect_tri(tri1, tri2)
 
     # Third and last side
     return let
-        pl = Plane(v1[3], Meshes.ucross(v1[1]-v1[3], n1))
-        tri = eltype(tri1)[]
+        pl = Plane(v1[3], (v1[1]-v1[3])×n1)
+        tri = TT[]
         for t in tri2
             tx = cut_with_plane(t, pl)
             for t1 in tx
