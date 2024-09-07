@@ -64,7 +64,7 @@ function cut_with_plane(tri::Tri{Dim,T}, plane::Plane{Dim,T};
         if s[inx] < 0
             push!(out, Tri(p[idx], p[inx], pi))
         else
-            push!(out, Tri(p[idx], pi, p[inx]))
+            push!(out, Tri(p[idx], pi, p[ipr]))
         end
            
     elseif sum(s .== 1) == 2
