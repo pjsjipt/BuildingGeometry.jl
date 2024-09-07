@@ -29,9 +29,9 @@ export cut_with_plane, chopwithpolyhedron
 export discrsurface, slicemesh
 export NodeInfo, nodeinfo,nodearea, nodepoint, nodeside, nodetag
 export intersect_tri, intersectmesh!
-#export BuildingSurface, savebsurf, loadbsurf, buildsurface, buildingslice, mergemeshes
-#export readraw,tri2mesh
-#export addforcecontrib!, forcematrix
+export BuildingSurface, savebsurf, loadbsurf, buildsurface, buildingslice, mergemeshes
+export readraw,tri2mesh
+export addforcecontrib!, forcematrix
 #export reescalemesh, translatemesh, rotatemesh
 
 abstract type AbstractBuildGeom end
@@ -45,9 +45,9 @@ include("chopmesh.jl")
 include("discr_surface.jl")
 include("node_info.jl")
 include("intersect_mesh.jl")
-#include("building_surface.jl")
-#include("raw.jl")
-#include("forces.jl")
-#include("transform.jl")
+include("building_surface.jl")
+include("raw.jl")
+include("forces.jl")
+include("transform.jl")
 
 end

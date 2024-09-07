@@ -2,7 +2,7 @@
 
 
 """
-`addforcecontrib!(F, nodes, forces=(1,2,6), sgn=1, side=1, point=Point(0,0,0))`
+`addforcecontrib!(F, nodes, forces=(1,2,6), sgn=1, side=1, point=SVec(0.,0.,0.))`
 
 
 The pressure on each face of a surface contributes to the force. This function
@@ -27,9 +27,9 @@ are available and its contribution should be added directly.
 
 The moments are calculated with respect to point `point`.
 """
-function addforcecontrib!(F::AbstractMatrix{T},nodes::AbstractVector{<:NodeInfo{3,T}},
+function addforcecontrib!(F::AbstractMatrix{T},nodes::AbstractVector{<:NodeInfo{T}},
                           forces=(1,2,6);
-                          sgn=1, side=1, point=Point{3,T}(0,0,0)) where {T}
+                          sgn=1, side=1, point=SVec{3,T}(0.,0.,0.)) where {T}
     nf = length(forces)
     (nf != size(F,1)) && error("`forces` and `F` have incompatible lengths")
     
@@ -51,15 +51,15 @@ function addforcecontrib!(F::AbstractMatrix{T},nodes::AbstractVector{<:NodeInfo{
 end
 
 """
-`forcematrix(F, nodes, forces=(1,2,6), sgn=1, side=1, point=Point(0,0,0))`
+`forcematrix(F, nodes, forces=(1,2,6), sgn=1, side=1, point=SVec(0,0,0))`
 
 Creates a force matrix from a [`BuildingSurface`](@ref) object. This function
 initializes the matrix and calls [`addforcecontrib!`](@ref).
 
 """
-function forcematrix(ncols::Integer,nodes::AbstractVector{<:NodeInfo{3,T}},
+function forcematrix(ncols::Integer,nodes::AbstractVector{<:NodeInfo{T}},
                      forces=(1,2,6);
-                     sgn=1, side=1, point=Point{3,T}(0,0,0)) where {T}
+                     sgn=1, side=1, point=SVec{3,T}(0.,0.,0.)) where {T}
     
     F = zeros(T, length(forces), ncols)
     return addforcecontrib!(F, nodes, forces; sgn=sgn, side=side, point=point)
@@ -68,7 +68,7 @@ end
 
 """
 `addforcecontrib!(F, nodes, forces; interleaved=false, sgn=1, side=1,
-                          point=Point{3,T}(0,0,0))`
+                          point=SVec{3,T}(0,0,0))`
 
 Adds the force contribution from a list of meshes given by argument `msh`. The specific
 forces calculated is given by argument `forces`.
@@ -114,9 +114,9 @@ Mzₙ
 
 """
 function addforcecontrib!(F::AbstractMatrix{T},
-                          msh::AbstractVector{<:AbstractVector{<:NodeInfo{3,T}}},
+                          msh::AbstractVector{<:AbstractVector{<:NodeInfo{T}}},
                           forces=(1,2,6); interleaved=false, sgn=1, side=1,
-                          point=Point{3,T}(0,0,0)) where {T}
+                          point=SVec{3,T}(0.,0.,0.)) where {T}
     
     nnodes = length(msh)
 
@@ -124,9 +124,9 @@ function addforcecontrib!(F::AbstractMatrix{T},
     (nnodes*nf != size(F,1)) && error("size(F,1) should equal to the number of meshes X number of forces ($(nnodes*nf))")
 
     
-    if isa(point, Point)
+    if isa(point, SVec)
         p = repeat([point], nnodes)
-    elseif isa(point, AbstractVector{<:Point})
+    elseif isa(point, AbstractVector{<:SVec})
         p = point
     else
         error("Invalid point: $point of invalid type!")
@@ -163,15 +163,15 @@ end
 
 """                    
 `forcematrix(F, msh, forces; interleaved=false, sgn=1, side=1,
-                              point=Point{3,T}(0,0,0))`
+                              point=SVec{3,T}(0.,0.,0.))`
 
 Allocates memory and calls [`addforcecontrib!`](@ref) to compute the force matrix
 for different sections (usually floors of a building).
 """                     
 function forcematrix(ncols::Integer,
-                     msh::AbstractVector{<:AbstractVector{<:NodeInfo{3,T}}},
+                     msh::AbstractVector{<:AbstractVector{<:NodeInfo{T}}},
                      forces=(1,2,6); interleaved=false, sgn=1, side=1,
-                     point=Point{3,T}(0,0,0)) where {T}
+                     point=SVec{3,T}(0.,0.,0.)) where {T}
     
     F = zeros(T, length(msh)*length(forces), ncols)
     return addforcecontrib!(F, msh, forces; interleaved=interleaved,

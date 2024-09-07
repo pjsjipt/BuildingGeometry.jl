@@ -2,8 +2,8 @@
 
 let
     # Basic stuff. A single external surface
-    pts = Point.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
-    tri = [Triangle((-1,-1,0), (1,-1,0), (1,1,0)), Triangle((-1,-1,0),(1,1,0),(-1,1,0))]
+    pts = SVec.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
+    tri = [Tri((-1.,-1.,0.), (1.,-1.,0.), (1.,1.,0.)), Tri((-1.,-1.,0.),(1.,1.,0.),(-1.,1.,0.))]
     m =  buildsurface(tri, [(points=pts, tri=1:2, id=1:4)])
     Ne = length(pts)
     Ae = zeros(Ne)
@@ -14,7 +14,7 @@ let
     @test all(Ae .≈ 1.0)
 
 
-    ipts = Point.([(-0.75, 0,0), (0.75, 0,0)])
+    ipts = SVec.([(-0.75, 0,0), (0.75, 0,0)])
     m =  buildsurface(tri, [(points=pts, tri=1:2, id=1:4),
                             (points=ipts, tri=1:2, id=5:6)])
     Ne = length(pts)
@@ -34,11 +34,11 @@ let
     @test all(Ai .≈ 2.0)
 
     # Lets try something more complex
-    tri = [Triangle((0,0,0), (1,0,0), (1,1,0)), Triangle((0,0,0), (1,1,0), (0,1,0))]
+    tri = [Tri((0.,0.,0.), (1.,0.,0.), (1.,1.,0.)), Tri((0.,0.,0.), (1.,1.,0.), (0.,1.,0.))]
     Ne = 10
     Ni = 5
-    epts = Point.(rand(Ne), rand(Ne), 0)
-    ipts = Point.(rand(Ni), rand(Ni), 0)
+    epts = SVec.(rand(Ne), rand(Ne), 0)
+    ipts = SVec.(rand(Ni), rand(Ni), 0)
     m =  buildsurface(tri, [(points=epts, tri=1:2, id=1:Ne),
                             (points=ipts, tri=1:2, id=1:Ni)])
     
@@ -54,15 +54,15 @@ let
     @test sum(Ai) ≈ 1.0
     
     
-    tri = [Triangle((0.,0.,0.), (1.,0.,0.), (1.,0.75,0.)),
-              Triangle((0.,0.,0.), (1.,0.75,0.), (0.,0.75,0.)),
-              Triangle((0.,0.75,0.), (1.,0.75,0.), (1.,1.,0.)),
-              Triangle((0.,0.75,0.), (1.,1.,0.), (0.,1.,0.))]
+    tri = [Tri((0.,0.,0.), (1.,0.,0.), (1.,0.75,0.)),
+              Tri((0.,0.,0.), (1.,0.75,0.), (0.,0.75,0.)),
+              Tri((0.,0.75,0.), (1.,0.75,0.), (1.,1.,0.)),
+              Tri((0.,0.75,0.), (1.,1.,0.), (0.,1.,0.))]
 
     Ne = 50
     Ni = 20
-    epts = Point.(rand(Ne), rand(Ne), 0)
-    ipts = Point.(0.75*rand(Ni), 0.75*rand(Ni), 0)
+    epts = SVec.(rand(Ne), rand(Ne), 0)
+    ipts = SVec.(0.75*rand(Ni), 0.75*rand(Ni), 0)
     m =  buildsurface(tri, [(points=epts, tri=1:4, id=1:Ne),
                             (points=ipts, tri=1:2, id=1:Ni),
                             (tri=3:4, id=-1)])
@@ -79,8 +79,8 @@ let
     @test sum(Ae) ≈ 1.0
     @test sum(Ai) ≈ 0.75
     
-    pts = Point.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
-    tri = [Triangle((-1,-1,0), (1,-1,0), (1,1,0)), Triangle((-1,-1,0),(1,1,0),(-1,1,0))]
+    pts = SVec.([(-0.5,-0.5,0),(0.5,-0.5,0),(-0.5,0.5,0),(0.5,0.5,0)])
+    tri = [Tri((-1.,-1.,0.), (1.,-1.,0.), (1.,1.,0.)), Tri((-1.,-1.,0.),(1.,1.,0.),(-1.,1.,0.))]
 
 end
 

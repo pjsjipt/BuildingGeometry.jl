@@ -1,9 +1,8 @@
-import Meshes: Geometry
 import StaticArrays: SA, SMatrix
 import Unitful
 import Unitful: uparse, ustrip
 """
-`reescalemesh(tri; scale=1/200, origin=Point(0,0,0), unit="mm")`
+`reescalemesh(tri; scale=1/200, origin=SVec(0.,0.,0.), unit="mm")`
 
 Creates a new mesh that is simply a scaled version of mesh `tri`.
  The function assumes that the input mesh is in model scale will generate
@@ -24,39 +23,39 @@ of the input mesh coordinate system.
  * `unit`: A string containing the input mesh length unit system.
  * `ounit`: A string containing the output mesh length unit system.
 """
-function reescalemesh(geom::G; scale=1/200,
-                      origin=Point(0,0,0), unit="mm", ounit="m") where {G}
+function reescalemesh(geom; scale=1/200,
+                      origin=SVec(0.,0.,0.), unit="mm", ounit="m") 
     ufac = ustrip(uparse(ounit), 1.0 * uparse(unit)) / scale
     return reescalemesh(geom, ufac, origin) 
 end
 
-reescalemesh(geom::G, ufac, origin=Point(0,0,0)) where {G} =
-    G((vertices(geom) .- Point(0,0,0)) .* ufac .+ origin )
+reescalemesh(geom::G, ufac, origin=SVec(0,0,0)) where {G} =
+    G((vertices(geom) .- SVec(0.,0.,0.)) .* ufac .+ origin )
 
-function reescalemesh(p::Point; scale=1/200, origin=Point(0,0,0),
+function reescalemesh(p::SVec; scale=1/200, origin=SVec(0.,0.,0.),
                       unit="mm", ounit="m")
     ufac = ustrip(uparse(ounit), 1.0 * uparse(unit)) / scale
-    return (p-Point(0,0,0,)) * ufac + origin
+    return (p-SVec(0.,0.,0.,)) * ufac + origin
 end
 
-reescalemesh(p::Point, ufac, origin=Point(0,0,0)) = (p-Point(0,0,0))*ufac + origin
+reescalemesh(p::SVec, ufac, origin=SVec(0.,0.,0.)) = (p-SVec(0.,0.,0.))*ufac + origin
 
 """
 `translatemesh(tri, u)`
 
 Translate a geometric object by vector `u`
 """
-translatemesh(geom::G, u::Vec) where {G<:Geometry} =
+translatemesh(geom::G, u::SVec) where {G} =
     G([v + u for v in vertices(geom)])
 
-translatemesh(p::Point, u::Vec) = p + u
+translatemesh(p::SVec, u::SVec) = p + u
 
 """
-`rotationmatrix(θ, ω=Vec(0.0, 0.0, 1.0))`
+`rotationmatrix(θ, ω=SVec(0.0, 0.0, 1.0))`
 
 Calculate the rotation matrix around vector `ω` by an angle of `θ`.
 """
-function rotationmatrix(θ, ω=Vec(0.0, 0.0, 1.0))
+function rotationmatrix(θ, ω=SVec(0.0, 0.0, 1.0))
     c = cos(θ)
     s = sin(θ)
     u,v,w = ω / norm(ω)
@@ -72,15 +71,15 @@ end
 Rotates a mesh (or geometry) by angle `θ` around an axis `ω` passing through point
 `p0`.
 """
-function rotatemesh(geom::G, θ, ω::Vec, p0=Point(0,0,0)) where {G<:Geometry}
+function rotatemesh(geom::G, θ, ω::SVec, p0=SVec(0,0,0)) where {G}
     R = rotationmatrix(θ, ω)
     
     return rotatemesh(geom, R, p0)
 end
 
-rotatemesh(geom::G, R::SMatrix, p0=Point(0,0,0)) where {G<:Geometry} =
+rotatemesh(geom::G, R::SMatrix, p0=SVec(0,0,0)) where {G} =
     G([R*(v - p0) + p0 for v in vertices(geom)])
 
-rotatemesh(p::Point, R::SMatrix, p0=Point(0,0,0)) = (R*(p-p0) + p0)
-rotatemesh(p::Point, θ::Real, ω::Vec, p0=Point(0,0,0)) =
+rotatemesh(p::SVec, R::SMatrix, p0=SVec(0,0,0)) = (R*(p-p0) + p0)
+rotatemesh(p::SVec, θ::Real, ω::SVec, p0=SVec(0,0,0)) =
     rotatemesh(p, rotationmatrix(θ, ω), p0)
