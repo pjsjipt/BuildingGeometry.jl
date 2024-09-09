@@ -15,14 +15,12 @@ The tutorial will consider two cases:
 
 The building will be cylindrical in shape with a diameter of 30 m and 150 m high. Only external pressure taps exist. They are located along 10 rows equally distributed along the height of the building. Each row is composed of 24 pressure taps totalling 240 pressure taps on the outer surface of the building.
 
-The geometry of th building required by `BuildingGeometry` is a set of faces composed of triangles. Each face is a vector of `Meshes.Triangle`. In this case, the geometry consists of a single cylindrical surface that will be generated in Julia directly
+The geometry of th building required by `BuildingGeometry` is a set of faces composed of triangles. Each face is a vector of `BuildingGeometry.Tri`. In this case, the geometry consists of a single cylindrical surface that will be generated in Julia directly
 
 ### Defining the geometry of the building
 
 ```@setup 1
-import GLMakie
-import GLMakie: current_figure
-using Meshes
+using GLMakie
 using BuildingGeometry
 using Colors
 ``` 
@@ -38,23 +36,22 @@ nθ = length(θ)
 x1 = R * cosd.(θ)
 y1 = R * sind.(θ)
 
-p1 = Point.(x1, y1, 0.0)
-p2 = Point.(x1, y1, H)
+p1 = SVec.(x1, y1, 0.0)
+p2 = SVec.(x1, y1, H)
 
-trilst = [Triangle(p1[1], p1[2], p2[2]), Triangle(p1[1], p2[2], p2[1])]
+trilst = [Tri(p1[1], p1[2], p2[2]), Tri(p1[1], p2[2], p2[1])]
 
 for i in 2:nθ-1
-    push!(trilst, Triangle(p1[i], p1[i+1], p2[i+1]))
-    push!(trilst, Triangle(p1[i], p2[i+1], p2[i]))
+    push!(trilst, Tri(p1[i], p1[i+1], p2[i+1]))
+    push!(trilst, Tri(p1[i], p2[i+1], p2[i]))
 end
 ```
 
-To plot the meshes, there is the function [`tri2mesh`](@ref) that converts the vector of triangles into a `Meshes.SimpleMesh` that can be visualized with the package [`MeshViz,jl`](https://github.com/JuliaGeometry/MeshViz.jl).
+To plot the meshes, there is the function [`tri2mesh`](@ref) that converts the vector of triangles into a the vertices and connectivity necessary for plotting in method `mesh` from `Makie`.
 
 ```@example 1
 
-viz(tri2mesh(trilst));
-current_figure()
+mesh(tri2mesh(trilst)...);
 ```
 
 
@@ -70,18 +67,18 @@ dz = H/nr  # Height of each row
 zh = range(dz/2, step=dz, length=nr)
 θ2 = range(15/2, step=15, length=24)
 
-epts = Point3[]
+epts = SVec{3,Float64}[]
 for z in zh
     for ang in θ2
     	x = R * cosd(ang)
 	y = R * sind(ang)
-	push!(epts, Point(x, y, z))
+	push!(epts, SVec(x, y, z))
     end
-end    
+end
 
-viz(epts, color=:red);
-viz!(tri2mesh(trilst), color=:gray, alpha=0.3);
-current_figure()
+fig,ax,plt = mesh(tri2mesh(trilst)..., color=(:gray, 0.3));
+scatter!(ax, Point.(epts), color=:red);
+fig
 ```
 
 ### Discretizing the building
@@ -115,10 +112,10 @@ msh = buildsurface(trilst, # The geometry defined above
 # Now we will try to view the region of influence of each tap
 using Colors
 cc = distinguishable_colors(240)  # One color for each pressure tap
-viz(epts)
 ie = nodeside.(msh.nodes, 1)  # Getting the external pressure tap for each triangle
-viz!(tri2mesh(msh.tri), color=cc[ie])
-current_figure()
+fig,ax,plt = mesh(tri2mesh(msh.tri)..., color=cc[ie])
+scatter!(ax, Point.(epts))
+fig
 ```
 
 ### Slicing the building
@@ -131,12 +128,12 @@ zslices = 0.0:3.0:H  # Boundaries of each slice
 slices = buildingslice(msh, zslices);
 
 # Let's try to plot every other floor
-viz(epts, color=:black, size=3) # Pressure taps
+fig,ax,plt = scatter(epts, color=:black, size=3) # Pressure taps
 for i in firstindex(slices):2:lastindex(slices)
     ie1 = nodeside.(slices[i].nodes, 1)
-    viz!(tri2mesh(slices[i].tri), color=cc[ie1])
+	mesh!(ax, tri2mesh(slices[i].tri)..., color=cc[ie1])
 end
-current_figure()
+fig
 ```
 
 
@@ -166,7 +163,7 @@ The `` \left[F_{matrix}\right] `` matrix is sparse. The number of rows is the nu
 
 ```@example 1
 # Remember we have 240 pressure taps!
-Fbase = forcematrix(240, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
+Fbase = forcematrix(240, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=SVec(0.,0.,0.))
 println("Dimensions of `Fbase`: $(size(Fbase))")
 ```
 
@@ -198,7 +195,7 @@ In this case, the force matrix, when applied to the pressure measurements calcul
 
 ```@example 1
 sl_nodes = [sl.nodes for sl in slices]
-Fslices = forcematrix(240, sl_nodes, (1,2,6); sgn=1, side=1, point=Point(0,0,0))
+Fslices = forcematrix(240, sl_nodes, (1,2,6); sgn=1, side=1, point=SVec.(0.,0.,0.))
 println("Dimensions of `Fslices`: $(size(Fslices))")
 ```
 
@@ -220,9 +217,7 @@ This model has two surfaces:
 We will start out with the original geometry of the cicrcular building.
 
 ```@setup 2
-import GLMakie
-import GLMakie: current_figure
-using Meshes
+using GLMakie
 using BuildingGeometry
 ``` 
 
@@ -236,22 +231,22 @@ nθ = length(θ)
 x1 = R * cosd.(θ)
 y1 = R * sind.(θ)
 
-p1 = Point.(x1, y1, 0.0)
-p2 = Point.(x1, y1, H)
+p1 = SVec.(x1, y1, 0.0)
+p2 = SVec.(x1, y1, H)
 
-face1 = [Triangle(p1[1], p1[2], p2[2]), Triangle(p1[1], p2[2], p2[1])]
+face1 = [Tri(p1[1], p1[2], p2[2]), Tri(p1[1], p2[2], p2[1])]
 
 for i in 2:nθ-1
-    push!(face1, Triangle(p1[i], p1[i+1], p2[i+1]))
-    push!(face1, Triangle(p1[i], p2[i+1], p2[i]))
+    push!(face1, Tri(p1[i], p1[i+1], p2[i+1]))
+    push!(face1, Tri(p1[i], p2[i+1], p2[i]))
 end
 
 
-pf1 = Point(R, 0, 0)
-pf2 = Point(-R, 0, 0)
-pf3 = Point(-R, 0, H)
-pf4 = Point(R, 0, H)
-face2 = [Triangle(pf1, pf2, pf3), Triangle(pf1, pf3, pf4)]
+pf1 = SVec(R, 0., 0.)
+pf2 = SVec(-R, 0., 0.)
+pf3 = SVec(-R, 0., H)
+pf4 = SVec(R, 0., H)
+face2 = [Tri(pf1, pf2, pf3), Tri(pf1, pf3, pf4)]
 ```
 
 ### Defining the external and internal pressure taps
@@ -265,28 +260,28 @@ dz = H/nr  # Height of each row
 zh = range(dz/2, step=dz, length=nr)
 θ2 = range(15/2, step=15, length=24)
 
-epts1 = Point3[]
+epts1 = SVec{Dim,Float64}[]
 
 for z in zh
     for ang in θ2
     	x = R * cosd(ang)
 	y = R * sind(ang)
-	push!(epts1, Point(x, y, z))
+	push!(epts1, SVec(x, y, z))
     end
-end    
+end
 
 # Internal nodes of face 1
 nri = 3
 dzi = H / nri
 zhi = range(dzi/2, step=dzi, length=nri)
 θi = range(15.0, step=30, length=6)
-ipts1  = Point3[]
+ipts1  = SVec{3.Float64}[]
 
 for z in zhi
     for ang in θi
     	x = R * cosd(ang)
 	y = R * sind(ang)
-	push!(ipts1, Point(x, y, z))
+	push!(ipts1, SVec(x, y, z))
     end
 end
 
@@ -297,24 +292,23 @@ end
 nx2 = 3
 dx2 = D/nx2
 x2 = range(-R+dx2/2, step=dx2, length=nx2)
-epts2 = Point3[]
+epts2 = SVec{3,Float64}[]
 
 for z in zhi
     for x in x2
-    	push!(epts2, Point(x, 0.0, z))
+    	push!(epts2, SVec(x, 0.0, z))
     end
 end
 
 
 
+fig,ax,plt = scatter(Point.(epts1), color=:red)
+scatter!(ax, Point.(ipts1), color=:blue)
+scatter!(ax, Point.(epts2), color=:blue)
 
-viz(epts1,color=:red)
-viz!(ipts1, color=:blue)
-viz!(epts2, color=:green)
-
-viz!(tri2mesh(face1), color=:gray, alpha=0.3);
-viz!(tri2mesh(face2), color=:gray, alpha=0.3)
-current_figure()
+mesh!(ax, tri2mesh(face1)..., color=(:gray, 0.3));
+mesh!(ax, tri2mesh(face2)..., color=(:gray, 0.3));
+fig
 ```
 
 ### Discretizing the building
@@ -374,13 +368,13 @@ idx2 = .! idx1
 # Lets view them:
 
 let
-   fig = GLMakie.Figure()
-   ax1 = GLMakie.Axis3(fig[1,1], aspect=:data, title="No internal taps")
-   viz!(tri2mesh(msh.tri[idx1]))
+	fig = Figure()
+	ax1 = Axis3(fig[1,1], aspect=:data, title="No internal taps")
+	mesh!(ax1, tri2mesh(msh.tri[idx1])...)
 
-   ax2 = GLMakie.Axis3(fig[1,2], aspect=:data, title="Internal taps")
-   viz!(tri2mesh(msh.tri[idx2]))
-   current_figure()
+	ax2 = Axis3(fig[1,2], aspect=:data, title="Internal taps")
+	mesh!(tri2mesh(msh.tri[idx2])...)
+	fig
 end
 ```
 
@@ -394,18 +388,19 @@ In this case we should also add the internal faces contributions
 
 ```@example 2
 # Remember we have 267 pressure taps!
-Fbase = forcematrix(267, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
+Fbase = forcematrix(267, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=SVec(0.,0.,0.))
 
 # Adding internal contribution
 ii = nodetag.(msh.nodes, 2) .== 2 # Selecionando os nós com tag interna 2
-addforcecontrib!(Fbase, msh.nodes[ii], (1,2,3,4,5,6); sgn=-1, side=2, point=Point(0,0,0))
+addforcecontrib!(Fbase, msh.nodes[ii], (1,2,3,4,5,6); sgn=-1, side=2, 
+	point=SVec(0.,0.,0.))
 
 println("Dimensions of `Fbase`: $(size(Fbase))")
 ```
 
 ## Visualizing results
 
-The [`Makie`](https://docs.makie.org/stable/) is a very powerful package for viewing data. For now, `BuildingGeometry` is using [`Meshes.jl`](https://github.com/JuliaGeometry/Meshes.jl) for geometry stuff instead of `GeometryBasics.jl` package used by `Makie`. As can be seen in the plotting examples above we make use of the package [`MeshViz`](https://github.com/JuliaGeometry/MeshViz.jl) to view the meshes. This package provides a bridge between `Meshes.jl` and `Makie`.
+The [`Makie`](https://docs.makie.org/stable/) is a very powerful package for viewing data. 
 
 As an example, let's try to plot on the mesh the function
 
@@ -414,16 +409,14 @@ As an example, let's try to plot on the mesh the function
 ```@example 2
 
 function fun(p,R)
-   x,y,z = coordinates(p)
+   x,y,z = p
    return z * ((R+x)^2 + 2*(R+y)^2)
 end
 
 u = fun.(msh.points, R)
 smsh = tri2mesh(msh.tri)
 
-#data = meshdata(smsh, etable=(u=u,))
-viz(smsh, color=u)
-current_figure()
+mesh(smsh..., color=u)
 ```
 
 
