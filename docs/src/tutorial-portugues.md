@@ -253,7 +253,7 @@ dz = H/nr  # Altura de cada linha
 zh = range(dz/2, step=dz, length=nr)
 θ2 = range(15/2, step=15, length=24)
 
-epts1 = SVec{Dim,Float64}[]
+epts1 = SVec{3,Float64}[]
 
 for z in zh
     for ang in θ2

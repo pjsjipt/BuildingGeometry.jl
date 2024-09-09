@@ -257,26 +257,26 @@ end
 """
 `tri2mesh(tri)`
 
-Create a `Meshes.SimpleMesh` from a list of vectors. Very simple, used
-for visualizing meshes. Each triangle is assumed to have independent
+Create a vertices and connectivity that can be plotted using `mesh` from `Makie`.
+Very simple, used for visualizing meshes. Each triangle is assumed to have independent
 vertices.
 """
 function tri2mesh(tri::AbstractVector{Tri{Dim,T}}) where {Dim,T}
     ntri = length(tri)
     PType = Tri{Dim,T}
-    verts = fill(SVec(zero(T),zero(T), zero(T)), ntri*3)
-    conn = fill((0,0,0), ntri)
-    
+    verts = zeros(T, 3, ntri*3)
+    conn = zeros(Int, ntri, 3)
+
+    k=1
     for i in 1:ntri
-        k = (i-1)*3 + 1
         vtri = vertices(tri[i])
-        verts[k] = vtri[1]
-        verts[k+1] = vtri[2]
-        verts[k+2] = vtri[3]
-        conn[i] = (k,k+1,k+2)
+        verts[:, k] .= vtri[1]
+        verts[:, k+1] .= vtri[2]
+        verts[:, k+2] .= vtri[3]
+        conn[i,:] .= (k,k+1,k+2)
+        k += 3
     end
     return verts, conn
-    #return SimpleMesh(verts, connect.(conn, Triangle))
 end
 tri2mesh(m::BuildingSurface) = tri2mesh(m.tri)
 

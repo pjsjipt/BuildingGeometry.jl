@@ -260,7 +260,7 @@ dz = H/nr  # Height of each row
 zh = range(dz/2, step=dz, length=nr)
 θ2 = range(15/2, step=15, length=24)
 
-epts1 = SVec{Dim,Float64}[]
+epts1 = SVec{3,Float64}[]
 
 for z in zh
     for ang in θ2
@@ -275,7 +275,7 @@ nri = 3
 dzi = H / nri
 zhi = range(dzi/2, step=dzi, length=nri)
 θi = range(15.0, step=30, length=6)
-ipts1  = SVec{3.Float64}[]
+ipts1  = SVec{3,Float64}[]
 
 for z in zhi
     for ang in θi
