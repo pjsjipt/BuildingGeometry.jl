@@ -15,14 +15,12 @@ Este tutorial é dividido em duas partes:
 
 O edifício é um cilindro com diâmetro de 30 m e 150 m de altura. Apenas a pressão externa é medida. As tomadas de pressão estão localizadas em 10 linhas igualmente distribuídas ao longo da altura do edifício. Cada linha é composta de 24 tomadas de pressão, totalizando 240 tomadas de pressão externa em uma única face.
 
-O pacote `BuildingGeometry` trabalha com superfícies composta por triângulos. Cada superfície é um vetor de `Meshes.Triangle`. Neste caso, a geometria se reduz a uma única face cilíndrica que será gerada em Julia diretamente.
+O pacote `BuildingGeometry` trabalha com superfícies composta por triângulos. Cada superfície é um vetor de `BuildingGeometry.Tri`. Neste caso, a geometria se reduz a uma única face cilíndrica que será gerada em Julia diretamente.
 
 ### Definição da geomtetria do edifício
 
 ```@setup 3
-import GLMakie
-import GLMakie: current_figure
-using Meshes
+using GLMakie
 using BuildingGeometry
 ``` 
 
@@ -36,23 +34,21 @@ nθ = length(θ)
 x1 = R * cosd.(θ)
 y1 = R * sind.(θ)
 
-p1 = Point.(x1, y1, 0.0)
-p2 = Point.(x1, y1, H)
+p1 = SVec.(x1, y1, 0.0)
+p2 = SVec.(x1, y1, H)
 
-trilst = [Triangle(p1[1], p1[2], p2[2]), Triangle(p1[1], p2[2], p2[1])]
+trilst = [Tri(p1[1], p1[2], p2[2]), Tri(p1[1], p2[2], p2[1])]
 
 for i in 2:nθ-1
-    push!(trilst, Triangle(p1[i], p1[i+1], p2[i+1]))
-    push!(trilst, Triangle(p1[i], p2[i+1], p2[i]))
+    push!(trilst, Tri(p1[i], p1[i+1], p2[i+1]))
+    push!(trilst, Tri(p1[i], p2[i+1], p2[i]))
 end
 ```
 
-Para se visualizar a geometria, existe a função [`tri2mesh`](@ref) que converte o vetor de triângulos em um objeto `Meshes.SimpleMesh` que pode ser visualizado com o pacote [`MeshViz,jl`](https://github.com/JuliaGeometry/MeshViz.jl).
+Para se visualizar a geometria, existe a função [`tri2mesh`](@ref) que converte o vetor de triângulos nos vértices e conectividade necessários pela função `mesh` do pacote `Makie`.
 
 ```@example 3
-
-viz(tri2mesh(trilst));
-current_figure()
+mesh(tri2mesh(trilst)...);
 ```
 
 
@@ -68,18 +64,18 @@ dz = H/nr  # Height of each row
 zh = range(dz/2, step=dz, length=nr)
 θ2 = range(15/2, step=15, length=24)
 
-epts = Point3[]
+epts = SVec{3,Float64}[]
 for z in zh
     for ang in θ2
     	x = R * cosd(ang)
 	y = R * sind(ang)
-	push!(epts, Point(x, y, z))
+	push!(epts, SVec(x, y, z))
     end
-end    
+end
 
-viz(epts, color=:red);
-viz!(tri2mesh(trilst), color=:gray, alpha=0.3);
-current_figure()
+fig,ax,plt = mesh(tri2mesh(trilst)..., color=(:gray, 0.3));
+scatter!(ax, Point.(epts), color=:red);
+fig
 ```
 
 ### Discretização do edifício
@@ -113,10 +109,10 @@ msh = buildsurface(trilst, # The geometry defined above
 # Now we will try to view the region of influence of each tap
 using Colors
 cc = distinguishable_colors(240)  # One color for each pressure tap
-viz(epts)
 ie = nodeside.(msh.nodes, 1)  # Getting the external pressure tap for each triangle
-viz!(tri2mesh(msh.tri), color=cc[ie])
-current_figure()
+fig,ax,plt = mesh(tri2mesh(msh.tri)..., color=cc[ie])
+scatter!(ax, Point.(epts))
+fig
 ```
 
 ### Fatiando o edifício
@@ -125,17 +121,17 @@ Um importante resultado do teste em túnel de vento é obter a distribuição de
 
 
 ```@example 3
-zslices = 0.0:3.0:H  # Boundaries of each slice
+zslices = 0.0:3.0:H  # Altura de cada fatia
 
 slices = buildingslice(msh, zslices);
 
 # Let's try to plot every other floor
-viz(epts, color=:black, size=3) # Pressure taps
+fig,ax,plt = scatter(epts, color=:black, size=3) # Tomadas de pressão
 for i in firstindex(slices):2:lastindex(slices)
     ie1 = nodeside.(slices[i].nodes, 1)
-    viz!(tri2mesh(slices[i].tri), color=cc[ie1])
+	mesh!(ax, tri2mesh(slices[i].tri)..., color=cc[ie1])
 end
-current_figure()
+fig
 ```
 
 
@@ -175,7 +171,7 @@ O primeiro argumento é o número de colunas que corresponde ao número de tomad
 
 ```@example 3
 # Lembre-se: tempos 240 tomadas de pressão!
-Fbase = forcematrix(240, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
+Fbase = forcematrix(240, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=SVec(0.,0.,0.))
 println("Dimensões de `Fbase`: $(size(Fbase))")
 ```
 
@@ -196,7 +192,7 @@ Normalmente o calculista deseja a distribuição de carga ao longo da estrutura.
 
 ```@example 3
 sl_nodes = [sl.nodes for sl in slices]
-Fslices = forcematrix(240, sl_nodes, (1,2,6); sgn=1, side=1, point=Point(0,0,0))
+Fslices = forcematrix(240, sl_nodes, (1,2,6); sgn=1, side=1, point=SVec(0.,0.,0.))
 println("Dimensions of `Fslices`: $(size(Fslices))")
 ```
 
@@ -216,9 +212,7 @@ Este edifício tem duas superfícies:
 Começaremos reproduzindo a geometria do edifício simples acima.
 
 ```@setup 4
-import GLMakie
-import GLMakie: current_figure
-using Meshes
+using GLMakie
 using BuildingGeometry
 ``` 
 
@@ -232,22 +226,21 @@ nθ = length(θ)
 x1 = R * cosd.(θ)
 y1 = R * sind.(θ)
 
-p1 = Point.(x1, y1, 0.0)
-p2 = Point.(x1, y1, H)
+p1 = SVec.(x1, y1, 0.0)
+p2 = SVec.(x1, y1, H)
 
-face1 = [Triangle(p1[1], p1[2], p2[2]), Triangle(p1[1], p2[2], p2[1])]
+face1 = [Tri(p1[1], p1[2], p2[2]), Tri(p1[1], p2[2], p2[1])]
 
 for i in 2:nθ-1
-    push!(face1, Triangle(p1[i], p1[i+1], p2[i+1]))
-    push!(face1, Triangle(p1[i], p2[i+1], p2[i]))
+    push!(face1, Tri(p1[i], p1[i+1], p2[i+1]))
+    push!(face1, Tri(p1[i], p2[i+1], p2[i]))
 end
 
-
-pf1 = Point(R, 0, 0)
-pf2 = Point(-R, 0, 0)
-pf3 = Point(-R, 0, H)
-pf4 = Point(R, 0, H)
-face2 = [Triangle(pf1, pf2, pf3), Triangle(pf1, pf3, pf4)]
+pf1 = SVec(R, 0., 0.)
+pf2 = SVec(-R, 0., 0.)
+pf3 = SVec(-R, 0., H)
+pf4 = SVec(R, 0., H)
+face2 = [Tri(pf1, pf2, pf3), Tri(pf1, pf3, pf4)]
 ```
 
 ### Definindo as tomadas de pressão externas e internas
@@ -260,13 +253,13 @@ dz = H/nr  # Altura de cada linha
 zh = range(dz/2, step=dz, length=nr)
 θ2 = range(15/2, step=15, length=24)
 
-epts1 = Point3[]
+epts1 = SVec{Dim,Float64}[]
 
 for z in zh
     for ang in θ2
     	x = R * cosd(ang)
 	y = R * sind(ang)
-	push!(epts1, Point(x, y, z))
+	push!(epts1, SVec(x, y, z))
     end
 end    
 
@@ -275,40 +268,38 @@ nri = 3
 dzi = H / nri
 zhi = range(dzi/2, step=dzi, length=nri)
 θi = range(15.0, step=30, length=6)
-ipts1  = Point3[]
+ipts1  = SVec{3,Float64}[]
 
 for z in zhi
     for ang in θi
     	x = R * cosd(ang)
 	y = R * sind(ang)
-	push!(ipts1, Point(x, y, z))
+	push!(ipts1, SVec(x, y, z))
     end
 end
 
 
 # Nós externos da face 2
 
+
 nx2 = 3
 dx2 = D/nx2
 x2 = range(-R+dx2/2, step=dx2, length=nx2)
-epts2 = Point3[]
+epts2 = SVec{3,Float64}[]
 
 for z in zhi
     for x in x2
-    	push!(epts2, Point(x, 0.0, z))
+    	push!(epts2, SVec(x, 0.0, z))
     end
 end
 
+fig,ax,plt = scatter(Point.(epts1), color=:red)
+scatter!(ax, Point.(ipts1), color=:blue)
+scatter!(ax, Point.(epts2), color=:blue)
 
-
-
-viz(epts1,color=:red)
-viz!(ipts1, color=:blue)
-viz!(epts2, color=:green)
-
-viz!(tri2mesh(face1), color=:gray, alpha=0.3);
-viz!(tri2mesh(face2), color=:gray, alpha=0.3)
-current_figure()
+mesh!(ax, tri2mesh(face1)..., color=(:gray, 0.3));
+mesh!(ax, tri2mesh(face2)..., color=(:gray, 0.3));
+fig
 ```
 
 
@@ -369,13 +360,13 @@ idx2 = .! idx1
 # Lets view them:
 
 let
-   fig = GLMakie.Figure()
-   ax1 = GLMakie.Axis3(fig[1,1], aspect=:data, title="No internal taps")
-   viz!(tri2mesh(msh.tri[idx1]))
+	fig = Figure()
+	ax1 = Axis3(fig[1,1], aspect=:data, title="Sem tomadas internas")
+	mesh!(ax1, tri2mesh(msh.tri[idx1])...)
 
-   ax2 = GLMakie.Axis3(fig[1,2], aspect=:data, title="Internal taps")
-   viz!(tri2mesh(msh.tri[idx2]))
-   current_figure()
+	ax2 = Axis3(fig[1,2], aspect=:data, title="Tomadas internas")
+	mesh!(tri2mesh(msh.tri[idx2])...)
+	fig
 end
 ```
 
@@ -387,11 +378,12 @@ calcular as forças. Neste exemplo devemos lembrar das faces internas.
 
 ```@example 4
 # Lembre-se, temos 267 tomadas de pressão!
-Fbase = forcematrix(267, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=Point(0,0,0))
+Fbase = forcematrix(267, msh.nodes, (1,2,3,4,5,6); sgn=1, side=1, point=SVec(0.,0.,0.))
 
 # Adicionar a contribuição das tomadas de pressão internas - tag=2
 ii = nodetag.(msh.nodes, 2) .== 2 # Selecionando os nós com tag interna 2
-addforcecontrib!(Fbase, msh.nodes[ii], (1,2,3,4,5,6); sgn=-1, side=2, point=Point(0,0,0))
+addforcecontrib!(Fbase, msh.nodes[ii], (1,2,3,4,5,6); sgn=-1, side=2, 
+	point=SVec(0.,0.,0.))
 
 println("Dimensões de `Fbase`: $(size(Fbase))")
 ```
@@ -416,9 +408,7 @@ end
 u = fun.(msh.points, R)
 smsh = tri2mesh(msh.tri)
 
-#data = meshdata(smsh, etable=(u=u,))
-viz(smsh, color=u)
-current_figure()
+mesh(smsh..., color=u)
 ```
 
 ### [`WriteVTK.jl`](https://github.com/jipolanco/WriteVTK.jl)

@@ -1,6 +1,5 @@
 
 import StaticArrays: SVector
-import Meshes: connect, SimpleMesh, vertices, coordinates
 import DelimitedFiles: writedlm, readdlm
 """
 `BuildingSurface(tri, points, nodes)`
@@ -14,9 +13,9 @@ normal to the surface, the outside pressure tap, inside pressure tap and area.
 
 """
 struct BuildingSurface{T,Tex,Tin}
-    tri::Vector{Triangle{3,T}}
-    points::Vector{Point{3,T}}
-    nodes::Vector{NodeInfo{3,T,Tuple{Tex,Tin}}}
+    tri::Vector{Tri{3,T}}
+    points::Vector{SVec{3,T}}
+    nodes::Vector{NodeInfo{T,Tuple{Tex,Tin}}}
 end
 
 """
@@ -48,15 +47,15 @@ function loadbsurf(fname, delim='\t')
     if size(tab,2) != 13
         error("Wrong number of columns when reading BuildingSurface object. Should be 13!")
     end
-    TriFace = Triangle{3,Float64}
+    TriFace = Tri{3,Float64}
     tri = TriFace[]
-    points = Point{3,Float64}[]
+    points = SVec{3,Float64}[]
     nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
 
     for i in 1:size(tab,1)
-        p1 = Point(tab[i,1], tab[i,2], tab[i,3])
-        p2 = Point(tab[i,4], tab[i,5], tab[i,6])
-        p3 = Point(tab[i,7], tab[i,8], tab[i,9])
+        p1 = SVec(tab[i,1], tab[i,2], tab[i,3])
+        p2 = SVec(tab[i,4], tab[i,5], tab[i,6])
+        p3 = SVec(tab[i,7], tab[i,8], tab[i,9])
 
         s1 = round(Int, tab[i,10])
         s2 = round(Int, tab[i,11])
@@ -126,14 +125,14 @@ Again, if `points` is not provided, no pressure taps exist.
 ## Example
 
 ```julia-repl
-julia> epts = Point.([(0.25, 0.25, 0), (0.75, 0.25, 0), (0.25, 0.75, 0),
+julia> epts = SVec.([(0.25, 0.25, 0), (0.75, 0.25, 0), (0.25, 0.75, 0),
                 (0.75, 0.75, 0)]); # External pressure taps
 
 
-julia> cad = [Triangle((0,0,0),(1,0,0),(1,1,0)),
-              Triangle((0,0,0),(1,1,0),(0,1,0)),
-              Triangle((0,1,0),(1,1,0),(1,2,0)),
-              Triangle((0,1,0),(1,2,0),(0,2,0))];
+julia> cad = [Tri((0,0,0),(1,0,0),(1,1,0)),
+              Tri((0,0,0),(1,1,0),(0,1,0)),
+              Tri((0,1,0),(1,1,0),(1,2,0)),
+              Tri((0,1,0),(1,2,0),(0,2,0))];
 
 julia> # 1. Simples case, only external pressure taps
 
@@ -141,7 +140,7 @@ julia> msh1 = buildsurface(cad, [(points=epts, tri=1:4, id=1:4)]; nointid=-1);
 
 julia> # 2. Same external pressure taps and 1 internal pressure tap
 
-julia> ipts = [Point(0.5, 0.4, 0)]; # Internal pressure tap position
+julia> ipts = [SVec(0.5, 0.4, 0)]; # Internal pressure tap position
 
 julia> msh2 = buildsurface(cad, [(points=epts, tri=1:4, id=1:4, tag=1),
                                  (points=ipts, tri=1:4, id=5, tag=2)]);
@@ -155,14 +154,14 @@ julia> msh2 = buildsurface(cad, [(points=epts, tri=1:4, id=1:4, tag=1),
 
 ```
 """
-function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
-                      sections::AbstractVector; nointid=-1, tag=0)
+function buildsurface(cad::AbstractVector{Tri{3,Float64}},
+                      sections::AbstractVector; atol=atolf(Float64),nointid=-1, tag=0)
 
     nsecs = length(sections)
 
-    TriFace = Triangle{3,Float64}
+    TriFace = Tri{3,Float64}
     msh = TriFace[]
-    nodes = NodeInfo{3,Float64,Tuple{Int,Int}}[]
+    nodes = NodeInfo{Float64,Tuple{Int,Int}}[]
     # The first section should specify the external side
     # The others, if present are internal sides
     
@@ -194,7 +193,7 @@ function buildsurface(cad::AbstractVector{<:Triangle{3,Float64}},
             for (k,t) in enumerate(m)
                 An = area(t) .* normal(t)
                 tp = centroid(t)
-                push!(msh, Triangle(vertices(t)...))
+                push!(msh, Tri(vertices(t)...))
                 push!(nodes, NodeInfo(An, tp, (eid[i], nointid), (etag, itag)))
             end
         end
@@ -262,10 +261,12 @@ Create a `Meshes.SimpleMesh` from a list of vectors. Very simple, used
 for visualizing meshes. Each triangle is assumed to have independent
 vertices.
 """
-function tri2mesh(tri::AbstractVector{<:Triangle{Dim,T}}) where {Dim,T}
+function tri2mesh(tri::AbstractVector{Tri{Dim,T}}) where {Dim,T}
     ntri = length(tri)
-    verts = fill(Point{Dim,T}(0,0,0), ntri*3)
+    PType = Tri{Dim,T}
+    verts = fill(SVec(zero(T),zero(T), zero(T)), ntri*3)
     conn = fill((0,0,0), ntri)
+    
     for i in 1:ntri
         k = (i-1)*3 + 1
         vtri = vertices(tri[i])
@@ -274,7 +275,8 @@ function tri2mesh(tri::AbstractVector{<:Triangle{Dim,T}}) where {Dim,T}
         verts[k+2] = vtri[3]
         conn[i] = (k,k+1,k+2)
     end
-    return SimpleMesh(verts, connect.(conn, Triangle))
+    return verts, conn
+    #return SimpleMesh(verts, connect.(conn, Triangle))
 end
 tri2mesh(m::BuildingSurface) = tri2mesh(m.tri)
 
@@ -324,25 +326,25 @@ different ways depending on the arguments types.
  * `nslices`, `pa`, `pb`. The building is sliced into equal `nslices` from point `pa` to point `pb`.
 """
 function buildingslice(msh::BuildingSurface{T},
-                    p::AbstractVector{Point{3,T}}; rtol=1e-8) where {T}
-    trilst, triidx = slicemesh(msh.tri, p; rtol=rtol)
+                    p::AbstractVector{SVec{3,T}};  atol=atolf(Float64)) where {T}
+    trilst, triidx = slicemesh(msh.tri, p; atol=atol)
     
     return [floor_mesh(trilst[i], triidx[i], msh) for i in eachindex(trilst)]
 end
 
 
 function buildingslice(msh::BuildingSurface{T}, z::AbstractVector{T};
-                       x=0, y=0, rtol=1e-8) where {T}
+                       x=0, y=0, atol=atolf(Float64)) where {T}
     
-    trilst, triidx = slicemesh(msh.tri, z; x=x, y=y, rtol=rtol)
+    trilst, triidx = slicemesh(msh.tri, z; x=x, y=y, atol=atol)
     return [floor_mesh(trilst[i], triidx[i], msh) for i in eachindex(trilst)]
 end
 
     
 function buildingslice(msh::BuildingSurface{T}, nslices::Integer,
-                   pa::Point{3,T}, pb::Point{3,T};  rtol=1e-8) where {T}
+                   pa::SVec{3,T}, pb::SVec{3,T};   atol=atolf(Float64)) where {T}
 
-    trilst, triidx = slicemesh(msh.tri, pa, pb; rtol=rtol)
+    trilst, triidx = slicemesh(msh.tri, pa, pb; atol=atol)
     
     return [floor_mesh(trilst[i], triidx[i], msh) for i in eachindex(trilst)]
 end

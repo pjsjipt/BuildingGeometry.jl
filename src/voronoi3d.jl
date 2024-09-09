@@ -1,4 +1,3 @@
-
 export voronoi3d,  makebbox, VoronoiMesh
 export getpoint, getvertex, npoints
 
@@ -45,8 +44,8 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
             
             Δ = max(xmax-xmin, ymax-ymin, zmax-zmin)  # A length for the domain
             # Let's make a big bounding box
-            Box( Point(xmin-nd*Δ, ymin-nd*Δ, zmin-nd*Δ),
-                 Point(xmax+nd*Δ, ymax+nd*Δ, zmax+nd*Δ) )
+            Box( SVec(xmin-nd*Δ, ymin-nd*Δ, zmin-nd*Δ),
+                 SVec(xmax+nd*Δ, ymax+nd*Δ, zmax+nd*Δ) )
         end
         
     end
@@ -57,19 +56,19 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
     volumes that contain the infinity point can be excluded.
     =#
     bx, by, bz  = let
-        (xmin,ymin,zmin), (xmax,ymax,zmax) = coordinates.(extrema(bbox))
-        bx1, by1, bz1 = makebbox((xmin,xmax),
-                                 (ymin,ymax),
-                                 (zmin,zmax))
+        pmin, pmax = extrema(bbox)
+        bx1, by1, bz1 = makebbox((pmin[1],pmax[1]),
+                                 (pmin[2],pmax[2]),
+                                 (pmin[3],pmax[3]))
         
-        xm = (xmin+xmax)/2
-        ym = (ymin+ymax)/2
-        zm = (zmin+zmax)/2
-        bx2 = [xmin, xmax, xm, xm, xm, xm]
-        by2 = [ym, ym, ymin, ymax, ym, ym]
-        bz2 = [zm, zm, zm, zm, zmin, zmax]
+        xm = (pmin[1]+pmax[1])/2
+        ym = (pmin[2]+pmax[2])/2
+        zm = (pmin[3]+pmax[3])/2
+        bx2 = [pmin[1], pmax[1], xm, xm, xm, xm]
+        by2 = [ym, ym, pmin[2], pmax[2], ym, ym]
+        bz2 = [zm, zm, zm, zm, pmin[3], pmax[3]]
         if !isnothing(auxpts)
-            [bx1; bx2; auxpts.x], [by1; by2; auxpts.y], [bz1; bz2; auxpts.z]
+            [bx1; bx2; auxpts[1]], [by1; by2; auxpts[2]], [bz1; bz2; auxpts[3]]
         else
             [bx1; bx2], [by1; by2], [bz1; bz2]
         end
@@ -80,16 +79,15 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
     px = [bx; x]
     py = [by; y]
     pz = [bz; z]
-    
-    vor = pyvoronoi[]([px py pz])
+    vor = pyvoronoi[]([ustrip.(px) ustrip.(py) ustrip.(pz)])
 
-    p = Point.(x,y,z)
-    b = Point.(bx, by,bz)
+    p = SVec.(x,y,z)
+    b = SVec.(bx, by,bz)
     vx = vor.vertices[:,1]
     vy = vor.vertices[:,2]
     vz = vor.vertices[:,3]
     
-    v = Point.(vx, vy, vz)
+    v = SVec.(vx, vy, vz)
 
     pp = [b; p]
     regions = Vector{Int}[]
@@ -124,7 +122,7 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
         # points towards point `i` it should be reversed and for
         # point `k` the orientation is correct.
         pface = ConvexPolygon(CircularVector(v[vi]))
-        n⃗ = normal(pface)
+        n⃗ = normalarea(pface)
         # Let's create a vector point pointing from `i` to any vertex
         # of the polygonal face:
         u⃗ = v[vi[1]] - pp[i]
@@ -180,15 +178,18 @@ function voronoi3d(x,y,z; bbox=nothing, nd=8, auxpts=nothing)
     
 end
 
-function voronoi3d(pts::AbstractVector{<:Point{3}}; bbox=nothing, nd=8, auxpts=nothing)
-    x = [p.coords[1] for p in pts]
-    y = [p.coords[2] for p in pts]
-    z = [p.coords[3] for p in pts]
+function voronoi3d(pts::AbstractVector{SVec{3,T}}; bbox=nothing, nd=8, auxpts=nothing) where {T}
+
+    # Get the points with units in meter *without* any units!
+    x = [p[1] for p in pts]
+    y = [p[2] for p in pts]
+    z = [p[3] for p in pts]
+
 
     if !isnothing(auxpts)
-        xa = [p.coords[1] for p in auxpts]
-        ya = [p.coords[2] for p in auxpts]
-        za = [p.coords[3] for p in auxpts]
+        xa = [p[1] for p in auxpts]
+        ya = [p[2] for p in auxpts]
+        za = [p[3] for p in auxpts]
         auxpts = (x=xa, y=ya, z=za)
     end
     
@@ -209,8 +210,8 @@ and connectivity. It has connectivity information related to
  * Vertices neighboring a vertex
  * Points neighboring a vertex
 """
-struct VoronoiMesh{Dim,T,VP<:AbstractVector{Point{Dim,T}},
-                   VV<:AbstractVector{Point{Dim,T}},CP,
+struct VoronoiMesh{T, VP<:AbstractVector{SVec{3,T}},
+                   VV<:AbstractVector{SVec{3,T}},CP,
                    VPO<:AbstractVector{CP}}
     "Points used to calculate the Voronoi diagram"
     points::VP
@@ -226,9 +227,9 @@ struct VoronoiMesh{Dim,T,VP<:AbstractVector{Point{Dim,T}},
     vpconn::Vector{Vector{Int}}
 end
 
-function Base.show(io::IO, msh::VoronoiMesh{Dim,T}) where {Dim,T}
+function Base.show(io::IO, msh::VoronoiMesh)
     
-    println(io, "VoronoiMesh{$(string(Dim)),$(string(T))}")
+    println(io, "VoronoiMesh")
     println(io, "   - Number of cells: $(length(msh.points))")
     println(io, "   - Number of vertices: $(length(msh.vertices))")
 end

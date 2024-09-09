@@ -1,7 +1,5 @@
 export discrsurface
 # Surface discretization
-
-
 """
 `discrsurface(tri, idx, pts)`
 `discrsurface(tri, pts)`
@@ -22,12 +20,11 @@ could potentially be closest to a point if the points are not well distributed.
 
 The function returns the triangles that make up each region of influence. It returns, as well, the index of the original triangle from where it was created.
 """
-function discrsurface(tri, idx::AbstractVector{<:Integer},
-                      pts::AbstractVector{Point{3,Float64}};
-                      rtol=1e-8, bbox=nothing, nd=8)
+function discrsurface(tri::AbstractVector{Tri{3,T}}, idx::AbstractVector{<:Integer},
+                      pts::AbstractVector{SVec{3,T}}; atol=atolf(T),
+                      bbox=nothing, nd=8, return_vor=false) where {T}
 
-    TriFace = Triangle{3,Float64}
-    
+    TriFace = Tri{3,T}
     ntri = length(tri)
     npts = length(pts)
 
@@ -37,15 +34,17 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
         bbtri = boundingbox(tri)
         bbox1 = boundingbox([bbtri.min, bbtri.max, bbpts.min, bbpts.max])
         Δ = norm(bbox1.max-bbox1.min)
-        u = Vec(Δ, Δ, Δ)
+        u = SVec(Δ, Δ, Δ)
         bbox = Box(bbox1.min - nd*u, bbox1.max + nd*u)
     end
 
-    Lref = norm(bbpts.max-bbpts.min)
-    
-    atol = rtol * Lref/2
-
     vor = voronoi3d(pts, bbox=bbox)
+
+    if return_vor
+        return vor 
+    end
+
+    
     # Chop each triangle with every polyhedron.
     # Each node of `pts` corresponds to a volume (polyhedron). We will
     # Get every triangle on the surface mesh and 
@@ -55,12 +54,14 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
         id = Int[]
         trim = TriFace[]
         for i in idx
+            
             t = tri[i]
             m = chopwithpolyhedron(vol, t, atol=atol)
             nm = length(m)
             if nm > 0
                 for ti in m
-                    if area(ti) > 0
+                    aa = area(ti)
+                    if aa > atol^2
                         push!(trim, ti)
                         push!(id, i)
                     end
@@ -74,15 +75,16 @@ function discrsurface(tri, idx::AbstractVector{<:Integer},
     return trivor, tidx
 end
 
-discrsurface(tri, pts::AbstractVector{Point{3,Float64}};
-             rtol=1e-8, bbox=nothing, nd=8) = discrsurface(tri, 1:length(tri), pts;
-                                                           rtol=rtol, bbox=bbox,nd=nd)
+discrsurface(tri::AbstractVector{Tri{3,T}}, pts::AbstractVector{SVec{3,T}};
+             atol=atolf(T), bbox=nothing, nd=8, return_vor=false) where {T} =
+                 discrsurface(tri, 1:length(tri), pts; atol=atol,
+                              bbox=bbox,nd=nd, return_vor=return_vor)
 
 
 
 """
-`slicemesh(m, p; rtol=1e-8)`
-`slicemesh(m, z; x=0, y=0, rtol=1e-8)`
+`slicemesh(m, p)`
+`slicemesh(m, z; x=0, y=0)`
 `slicemesh(m, nslices, pa, pb;  rtol=1e-8)`
 
 Slice a mesh in slices defined by a vector of points `p`. Since in most cases
@@ -97,9 +99,10 @@ account. There is a method for slicing `nslices` from `pa` to `pb`.
  * `rtol`: relative tolerance admitted.
 
 """
-function slicemesh(m::AbstractVector{P},
-                   p::AbstractVector{Point{3,T}}; rtol=1e-8) where {P,T}
-    TriFace = Triangle{3,Float64}
+function slicemesh(m::AbstractVector{Tri{3,T}},
+                   p::AbstractVector{SVec{3,T}};
+                   atol=atolf(T)) where {T}
+    TriFace = Tri{3,T}
     mshlst = Vector{TriFace}[]
     mshidx = Vector{Int}[]
     # We will analyze each slice
@@ -108,27 +111,36 @@ function slicemesh(m::AbstractVector{P},
         mshi = TriFace[] # We will decompose this into triangles
         p₁ = p[i-1]
         p₂ = p[i]
-        L = norm(p₂-p₁)
-        n⃗₂ = (p₂ - p₁) ./ L
+        n⃗₂ = normalize(p₂ - p₁) 
         n⃗₁ = -n⃗₂
-        atol = rtol*L
+        pl1 = Plane(p₁, n⃗₁) # Plane 1
+        pl2 = Plane(p₂, n⃗₂) # Plane 1
+        
         for (k,f) in enumerate(m)
             v = vertices(f)
             # Check if there are vertices or edges in the slice in question
             
-            all((u-p₁) ⋅ n⃗₂ < 0 for u in v) && continue # Vertices below. Next!
-            all((u-p₂) ⋅ n⃗₂ > 0 for u in v) && continue # Vertices above. Next!
-
+            all((u-p₁)⋅n⃗₂ < -atol for u in v) && continue # Vertices below. Next!
+            all((u-p₂)⋅n⃗₂ > atol for u in v) && continue # Vertices above. Next!
+            
             # We have an intersection
-            pts = cut_with_plane(v, p₁, n⃗₁, true; atol=atol)
-            pts = cut_with_plane(pts, p₂, n⃗₂, true; atol=atol)
-
-            # Generate triangles:
-            npts = length(pts)
-            for i in 2:npts-1
-                push!(mshi, Triangle(pts[1], pts[i], pts[i+1]))
+            # Chop with plane 1
+            tri1 = cut_with_plane(f, pl1, atol=atol)
+            # Chop with plane 2. Now we might have more than 1 triangle
+            tri2 = TriFace[]
+            for tri in tri1
+                xtri = cut_with_plane(tri, pl2, atol=atol)
+                for t in xtri
+                    push!(tri2, t)
+                end
+            end
+            
+            # Let's store this information
+                for t in tri2
+                push!(mshi, t)
                 push!(idx, k)
             end
+            
         end
         push!(mshlst, mshi)
         push!(mshidx, idx)
@@ -137,18 +149,18 @@ function slicemesh(m::AbstractVector{P},
     return mshlst, mshidx
 end
 
-function slicemesh(m::AbstractVector{P}, z::AbstractVector{T};
-                   x=0, y=0, rtol=1e-8) where {P,T}
-    p = Point{3,T}.(x, y, z)
-    return slicemesh(m, p; rtol=rtol)
+function slicemesh(msh::AbstractVector{Tri{3,T}}, z::AbstractVector{T};
+                   x=zero(T), y=zero(T), atol=atolf(T)) where{T}
+    p = SVec.(x, y, z)
+    return slicemesh(msh, p)
 end
+    
 
-
-function slicemesh(m::AbstractVector{P}, nslices::Integer,
-                   pa::Point{3,T}, pb::Point{3,T};  rtol=1e-8) where {P,T}
+function slicemesh(m::AbstractVector{Tri{3,T}}, nslices::Integer,
+                   pa::SVec{3,T}, pb::SVec{3,T}; atol=atolf(T)) where {T}
     ξ = range(0.0, 1.0, length=nslices+1)
     u⃗ = pb-pa
     p = [pa + ξᵢ * u⃗ for ξᵢ in ξ]
-    return slicemesh(m, p; rtol=rtol)
+    return slicemesh(m, p)
 end
 

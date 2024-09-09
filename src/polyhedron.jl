@@ -5,9 +5,9 @@ import CircularArrays: CircularVector
 
 
 
-struct ConvexPolyhedron{T} <: Polyhedron{3,T}
+struct ConvexPolyhedron{T} 
     "List of vertices"
-    vertices::Vector{Point{3,T}}
+    vertices::Vector{SVec{3,T}}
     "Index of vertices of each face of the polyhedron"
     faces::Vector{Vector{Int}}
     vmap::Dict{Int,Int}
@@ -22,7 +22,7 @@ The faces are specified by the indices of its vertices that make up a polygon.
 The faces will be oriented so that the normal to the polygon is external to
 the polyhedron.
 """
-function ConvexPolyhedron(vertices::AbstractVector{Point{3,T}}, faces) where {T}
+function ConvexPolyhedron(vertices::AbstractVector{SVec{3,T}}, faces) where {T}
     vmap = Dict{Int,Int}()
     imap = Dict{Int,Int}()
     
@@ -37,7 +37,7 @@ function ConvexPolyhedron(vertices::AbstractVector{Point{3,T}}, faces) where {T}
         end
     end
     nv = length(vmap)
-    verts = Vector{Point{3,T}}(undef, nv)
+    verts = Vector{SVec{3,T}}(undef, nv)
     for (k,v) in vmap
         verts[v] = vertices[k]
     end
@@ -55,30 +55,30 @@ function ConvexPolyhedron(vertices::AbstractVector{Point{3,T}}, faces) where {T}
     return ConvexPolyhedron(verts, ff, imap)
 end
 
-function Base.show(io::IO, p::ConvexPolyhedron{T}) where {T}
+function Base.show(io::IO, p::ConvexPolyhedron)
     
-    println(io, "Polyhedron{$(string(T))}")
+    println(io, "ConvexPolyhedron")
     println(io, "   - Number of faces: $(length(p.faces))")
     println(io, "   - Number of vertices: $(nvertices(p))")
 end
 
-Meshes.vertices(p::ConvexPolyhedron) = p.vertices
-Meshes.nvertices(p::ConvexPolyhedron) = length(p.vertices)
+vertices(p::ConvexPolyhedron) = p.vertices
+nvertices(p::ConvexPolyhedron) = length(p.vertices)
 
 import Base.getindex
-Base.getindex(p::ConvexPolyhedron, i) = ConvexPolygon(CircularVector(p.vertices[p.faces[i]]))
+Base.getindex(p::ConvexPolyhedron, i) = ConvexPolygon(p.vertices[p.faces[i]])
 
-
-Meshes.nfacets(p::ConvexPolyhedron) = length(p.faces)
+plane(p::ConvexPolyhedron, i::Integer) = plane(p[i])
+nfacets(p::ConvexPolyhedron) = length(p.faces)
 
 
 """
-`pnpoly(poly::ConvexPolyhedron, p::Point)`
+`pnpoly(poly::ConvexPolyhedron, p::SVec)`
 
 Verify if a point is inside a polyhedron.
 
 """
-function pnpoly(poly::ConvexPolyhedron, p::Point)
+function pnpoly(p::SVec{3,T}, poly::ConvexPolyhedron{T}; atol=atolf(T)) where {T}
 
     # We will compute the outward normal of each face.
     # If the dot product between the normal and a vector
@@ -88,7 +88,7 @@ function pnpoly(poly::ConvexPolyhedron, p::Point)
     nf = nfacets(poly)
     for i in eachindex(poly.faces)
         pf = poly[i]
-        n⃗ = normal(pf)
+        n⃗ = normalarea(pf)
         u⃗ = p - vertices(pf)[begin]
         if u⃗⋅n⃗ > 0
             return false
@@ -96,7 +96,7 @@ function pnpoly(poly::ConvexPolyhedron, p::Point)
     end
     return true
 end
-Base.in(p::Point, poly::ConvexPolyhedron) = pnpoly(poly, p)
+Base.in(p::SVec, poly::ConvexPolyhedron) = pnpoly(p, poly)
 
 """
 `volume(p::ConvexPolyhedron)`
@@ -105,7 +105,7 @@ Computes the volume of a convex polyhedron.
 
 The approach used is to find a point a inside and sum 
 """
-function Meshes.volume(p::ConvexPolyhedron{T}) where {T}
+function volume(p::ConvexPolyhedron{T}) where {T}
 
     # Let's choose a point: any vertex.
     pt = p.vertices[begin]
@@ -113,9 +113,9 @@ function Meshes.volume(p::ConvexPolyhedron{T}) where {T}
     for i in eachindex(p.faces)
         # Get normal and area of each face!
         face = p[i] # Convex polygon
-        nrm = normal_(face)
+        nrm = normalarea(face)
         A = norm(nrm)
-        n⃗ = nrm ./ A
+        n⃗ = (nrm ./ A)
         
         # Measure the distance from point pt to the plane of the face.
         # This should be a negative number (outward normal...)
@@ -124,10 +124,10 @@ function Meshes.volume(p::ConvexPolyhedron{T}) where {T}
     end
 
     return vol
+    
                    
 end
 
-measure(p::ConvexPolyhedron) = volume(p)
 
 """
 `centroid(p::ConvexPolyhedron)`
@@ -140,35 +140,31 @@ function centroid(p::ConvexPolyhedron{T}) where {T}
     # that go from each face and converges to the selected point.
     # # Then we will simply add the contribution of each pyramid.
     # Let's choose a point: any vertex.
-    pt = p.vertices[begin]
-    xp, yp, zp = coordinates(pt)
-    
-    xc = zero(T)
-    yc = zero(T)
-    zc = zero(T)
+    pt = vertices(p)[begin]
+
+    vc = zero(pt)
+   
     vol = zero(T)
-    
     for i in eachindex(p.faces)
         # Get normal and area of each face!
         face = p[i] # Convex polygon
-        x0,y0,z0 = coordinates(centroid(face))
-        nrm = normal_(face)
+        
+        p0 = centroid(face)
+        nrm = normalarea(face)
         A = norm(nrm)
-        n⃗ = nrm ./ A
+        n⃗ = (nrm ./ A)
 
         # Measure the distance from point pt to the plane of the face.
         # This should be a negative number (outward normal...)
-        h = (pt - face.contour.vertices[begin]) ⋅ n⃗
-
+        h = (pt - vertices(face)[begin])⋅n⃗
+        
         V = A*h / 3 # Volume of the pyramid
-        xc += V * ( x0 + (xp-x0)/4 )
-        yc += V * ( y0 + (yp-y0)/4 )
-        zc += V * ( z0 + (zp-z0)/4 )
 
+        vc += V * (p0 + (pt-p0)./4)
         vol += V
     end
 
-    return Point(xc/vol, yc/vol, zc/vol)
+    return vc ./vol
     
 end
 
@@ -204,3 +200,13 @@ function poly2mesh(poly::ConvexPolyhedron)
                                
 end
 
+
+#=
+function surface_mesh(poly::ConvexPolyhedron)
+    v, conn1 = poly2mesh(poly)
+
+    conn = [connect( (i[1], i[2], i[3]) ) for i in eachrow(conn1)]
+
+    return SimpleMesh(v, conn)
+end
+=#
