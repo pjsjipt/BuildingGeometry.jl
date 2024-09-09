@@ -1,17 +1,16 @@
-using GLMakie
-using BuildingGeometry
 using Documenter
+using Colors, GLMakie
+using BuildingGeometry
 
-DocMeta.setdocmeta!(BuildingGeometry, :DocTestSetup, :(using BuildingGeometry); recursive=true)
+makedocs(
+    sitename = "BuildingGeometry",
+    format = Documenter.HTML(prettyurls=false),
+    modules = [BuildingGeometry]
+)
 
-makedocs(;
-         modules=[BuildingGeometry],
-         authors="Paulo Jabardo <pjabardo@ipt.br>",
-         sitename="BuildingGeometry.jl",
-         format=Documenter.HTML(prettyurls = haskey(ENV, "CI")),
-         pagesonly=true,
-         draft=false,
-         pages=["Home" => "index.md"])
-
-
-#         repo="https://github.com/pjsjipt/BuildingGeometry.jl/blob/{commit}{path}#{line}",
+# Documenter can also automatically deploy documentation to gh-pages.
+# See "Hosting Documentation" and deploydocs() in the Documenter manual
+# for more information.
+#=deploydocs(
+    repo = "<repository url>"
+)=#

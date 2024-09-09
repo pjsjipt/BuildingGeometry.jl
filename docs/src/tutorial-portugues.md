@@ -21,6 +21,7 @@ O pacote `BuildingGeometry` trabalha com superfícies composta por triângulos. 
 
 ```@setup 3
 using GLMakie
+using Colors
 using BuildingGeometry
 ``` 
 
@@ -213,6 +214,7 @@ Começaremos reproduzindo a geometria do edifício simples acima.
 
 ```@setup 4
 using GLMakie
+using Colors
 using BuildingGeometry
 ``` 
 

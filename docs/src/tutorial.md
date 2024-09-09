@@ -218,6 +218,7 @@ We will start out with the original geometry of the cicrcular building.
 
 ```@setup 2
 using GLMakie
+using Colors
 using BuildingGeometry
 ``` 
 
