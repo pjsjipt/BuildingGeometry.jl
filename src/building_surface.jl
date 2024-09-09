@@ -1,6 +1,7 @@
 
 import StaticArrays: SVector
 import DelimitedFiles: writedlm, readdlm
+
 """
 `BuildingSurface(tri, points, nodes)`
 

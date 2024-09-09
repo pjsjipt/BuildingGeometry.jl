@@ -51,7 +51,7 @@ To plot the meshes, there is the function [`tri2mesh`](@ref) that converts the v
 
 ```@example 1
 
-mesh(tri2mesh(trilst)...);
+mesh(tri2mesh(trilst)...)
 ```
 
 
@@ -113,7 +113,7 @@ msh = buildsurface(trilst, # The geometry defined above
 using Colors
 cc = distinguishable_colors(240)  # One color for each pressure tap
 ie = nodeside.(msh.nodes, 1)  # Getting the external pressure tap for each triangle
-fig,ax,plt = mesh(tri2mesh(msh.tri)..., color=cc[ie])
+fig,ax,plt = mesh(tri2mesh(msh.tri)..., color=repeat(cc[ie],inner=3))
 scatter!(ax, Point.(epts))
 fig
 ```
@@ -128,10 +128,10 @@ zslices = 0.0:3.0:H  # Boundaries of each slice
 slices = buildingslice(msh, zslices);
 
 # Let's try to plot every other floor
-fig,ax,plt = scatter(epts, color=:black, size=3) # Pressure taps
+fig,ax,plt = scatter(Point.(epts), color=:black) # Pressure taps
 for i in firstindex(slices):2:lastindex(slices)
     ie1 = nodeside.(slices[i].nodes, 1)
-	mesh!(ax, tri2mesh(slices[i].tri)..., color=cc[ie1])
+	mesh!(ax, tri2mesh(slices[i].tri)..., color=repeat(cc[ie1],inner=3))
 end
 fig
 ```
@@ -416,7 +416,7 @@ end
 u = fun.(msh.points, R)
 smsh = tri2mesh(msh.tri)
 
-mesh(smsh..., color=u)
+mesh(smsh..., color=repeat(u,inner=3))
 ```
 
 

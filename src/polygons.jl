@@ -15,7 +15,6 @@ Create a convex polygon.
 
 
 """
-
 ConvexPolygon(x::AbstractVector, y::AbstractVector) =
     ConvexPolygon([SVec(xx, yy) for (xx,yy) in zip(x,y)])
 
@@ -29,8 +28,24 @@ end
 ConvexPolygon(pts::AbstractVector{TP}) where {TP<:Tuple} = ConvexPolygon(SVec.(pts))
 ConvexPolygon(pts::Vararg{P}) where {P<:SVec} = ConvexPolygon(collect(pts))
 
+"""
+`vertices(p)`
+
+Returns the vertices of a polygon
+"""
 vertices(p::ConvexPolygon) = p.contour
+"""
+`nvertices(p)`
+
+Returns the number of vertices of a polygon
+"""
 nvertices(p::ConvexPolygon) = length(p.contour)
+
+"""
+`rings(p)`
+
+Returns the contours (a single one in the case pf `ConvexPolygon`.
+"""
 rings(p::ConvexPolygon) = [p.contour]
                                      
 """
@@ -46,15 +61,18 @@ function normalarea(p::ConvexPolygon)
 end
 
 
+"""
+`area(p)`
 
-#function Meshes.normal(p::ConvexPolygon{2})
-#    n = normal_(p)
-#    return n / abs(n)
-#end
-
-
+Return the surface area of a `ConvexPolygon`
+"""
 area(p::ConvexPolygon) = norm(normalarea(p))
 
+"""
+`normal(p)`
+
+Return the unit normal of a `ConvexPolygon`
+"""
 normal(p::ConvexPolygon) = normalize(normalarea(p))
 
 """
@@ -111,6 +129,11 @@ end
 Base.in(pt::SVec, p::ConvexPolygon) = pnpoly(pt, p)
 
 
+"""
+`centroid(p)`
+
+Return the centroid of a `COnvexPolygon`
+"""
 function centroid(p::ConvexPolygon{Dim,T}) where {Dim,T}
     pts = vertices(p)
 
@@ -146,6 +169,11 @@ end
 =#
 #discretize(poly::ConvexPolygon, method=nothing) = simplexify(poly)
 
+"""
+`plane(p)`
+
+Return a `Plane` object corresponding to the `ConvexPolygon`
+"""
 plane(p::ConvexPolygon) = Plane(vertices(p)[begin], normal(p))
 
 

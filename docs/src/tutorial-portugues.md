@@ -48,7 +48,7 @@ end
 Para se visualizar a geometria, existe a função [`tri2mesh`](@ref) que converte o vetor de triângulos nos vértices e conectividade necessários pela função `mesh` do pacote `Makie`.
 
 ```@example 3
-mesh(tri2mesh(trilst)...);
+mesh(tri2mesh(trilst)...)
 ```
 
 
@@ -110,7 +110,7 @@ msh = buildsurface(trilst, # The geometry defined above
 using Colors
 cc = distinguishable_colors(240)  # One color for each pressure tap
 ie = nodeside.(msh.nodes, 1)  # Getting the external pressure tap for each triangle
-fig,ax,plt = mesh(tri2mesh(msh.tri)..., color=cc[ie])
+fig,ax,plt = mesh(tri2mesh(msh.tri)..., color=repeat(cc[ie], inner=3))
 scatter!(ax, Point.(epts))
 fig
 ```
@@ -126,10 +126,10 @@ zslices = 0.0:3.0:H  # Altura de cada fatia
 slices = buildingslice(msh, zslices);
 
 # Let's try to plot every other floor
-fig,ax,plt = scatter(epts, color=:black, size=3) # Tomadas de pressão
+fig,ax,plt = scatter(Point.(epts), color=:black) # Tomadas de pressão
 for i in firstindex(slices):2:lastindex(slices)
     ie1 = nodeside.(slices[i].nodes, 1)
-	mesh!(ax, tri2mesh(slices[i].tri)..., color=cc[ie1])
+	mesh!(ax, tri2mesh(slices[i].tri)..., color=repeat(cc[ie1],inner=3))
 end
 fig
 ```
@@ -401,14 +401,14 @@ Como exemplo, vamos tentar plotar na malha a função
 ```@example 4
 
 function fun(p,R)
-   x,y,z = coordinates(p)
+   x,y,z = p
    return z * ((R+x)^2 + 2*(R+y)^2)
 end
 
 u = fun.(msh.points, R)
 smsh = tri2mesh(msh.tri)
 
-mesh(smsh..., color=u)
+mesh(smsh..., color=repeat(u,inner=3))
 ```
 
 ### [`WriteVTK.jl`](https://github.com/jipolanco/WriteVTK.jl)

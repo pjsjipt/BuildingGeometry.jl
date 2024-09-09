@@ -2,7 +2,7 @@
 
 julia_version = "1.10.5"
 manifest_format = "2.0"
-project_hash = "a72d89556300857af06477589b5d50dce436fd0a"
+project_hash = "221e4540a7c6ac4ba3257070c18caead8483cae4"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -82,9 +82,7 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[deps.BuildingGeometry]]
 deps = ["CircularArrays", "DelimitedFiles", "Infiltrator", "LinearAlgebra", "PyCall", "StaticArrays", "Unitful"]
-git-tree-sha1 = "73e167ce439f2ead0521206c9055cced2741d1e9"
-repo-rev = "new-nolib"
-repo-url = ".."
+path = ".."
 uuid = "5fb171b4-8a69-45d3-9db0-72e8edc7ce8b"
 version = "0.1.0"
 
