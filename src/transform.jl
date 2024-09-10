@@ -13,8 +13,8 @@ The measurement units of input mesh `tri` is given by keyword argument `unit`.
 The output unit is given by keyword argument `ounit`.
 
 The origin can be changed using keyword argument `origin`.
-This is a point *in the output coordinate system* that corresponds to the origin
-of the input mesh coordinate system.
+This is a point *in the original coordinate system* that will serve as the
+coordinate reference point in the output.
 
 ## Arguments
  * `geom` A geometry object to be scaled
@@ -23,30 +23,36 @@ of the input mesh coordinate system.
  * `unit`: A string containing the input mesh length unit system.
  * `ounit`: A string containing the output mesh length unit system.
 """
-function reescalemesh(geom; scale=1/200,
-                      origin=SVec(0.,0.,0.), unit="mm", ounit="m") 
-    ufac = ustrip(uparse(ounit), 1.0 * uparse(unit)) / scale
-    return reescalemesh(geom, ufac, origin) 
+function reescalemesh(tri::Tri{Dim,T}; scale=T(1/200),
+                      origin=SVec{Dim,T}(zero(T),0,0),
+                      unit="mm", ounit="m") where {Dim,T}
+    ufac = ustrip(uparse(ounit), one(T) * uparse(unit)) / scale
+    return reescalemesh(tri, ufac, origin) 
 end
 
-reescalemesh(geom::G, ufac, origin=SVec(0,0,0)) where {G} =
-    G((vertices(geom) .- SVec(0.,0.,0.)) .* ufac .+ origin )
 
-function reescalemesh(p::SVec; scale=1/200, origin=SVec(0.,0.,0.),
-                      unit="mm", ounit="m")
-    ufac = ustrip(uparse(ounit), 1.0 * uparse(unit)) / scale
-    return (p-SVec(0.,0.,0.,)) * ufac + origin
+function reescalemesh(tri::Tri{Dim,T}, ufac::T,
+                      origin=SVec{Dim,T}(zero(T),0,0)) where {Dim,T}
+    v = vertices(tri)
+    Tri( ( (v[i] - origin) .* ufac for i in 1:nvertices(tri) )... )
+end
+function reescalemesh(p::SVec{Dim,T}; scale=T(1/200), origin=SVec{Dim,T}(zero(T),0,0),
+                      unit="mm", ounit="m") where {Dim,T}
+    ufac = ustrip(uparse(ounit), one(T) * uparse(unit)) / scale
+    return (p-origin) .* ufac 
 end
 
-reescalemesh(p::SVec, ufac, origin=SVec(0.,0.,0.)) = (p-SVec(0.,0.,0.))*ufac + origin
+reescalemesh(p::SVec{Dim,T}, ufac::T,
+             origin=SVec{Dim,T}(zero(T),0,0)) where {Dim,T} =
+                 (p - origin) .* ufac
 
 """
 `translatemesh(tri, u)`
 
 Translate a geometric object by vector `u`
 """
-translatemesh(geom::G, u::SVec) where {G} =
-    G([v + u for v in vertices(geom)])
+translatemesh(tri::Tri{Dim,T}, u::SVec{Dim,T}) where {Dim,T} =
+    Tri( (v + u for v in vertices(tri) )...)
 
 translatemesh(p::SVec, u::SVec) = p + u
 
@@ -55,7 +61,7 @@ translatemesh(p::SVec, u::SVec) = p + u
 
 Calculate the rotation matrix around vector `ω` by an angle of `θ`.
 """
-function rotationmatrix(θ, ω=SVec(0.0, 0.0, 1.0))
+function rotationmatrix(θ::T, ω=SVec{3,T}(zero(T), 0, 1)) where {T}
     c = cos(θ)
     s = sin(θ)
     u,v,w = ω / norm(ω)
@@ -65,21 +71,44 @@ function rotationmatrix(θ, ω=SVec(0.0, 0.0, 1.0))
         (w*u*(1-c)-v*s)  (w*v*(1-c)+u*s)  (c + w*w*(1-c))]
 end
 
+function rotationmatrix(θ::T) where {T}
+    c = cos(θ)
+    s = sin(θ)
+       
+    SA[ c   -s;
+        s  c]
+end
+
+
 """
-`rotatemesh(msh, θ, ω, p0)`
+`rotatemesh(msh, θ, ω, p)`
 
 Rotates a mesh (or geometry) by angle `θ` around an axis `ω` passing through point
 `p0`.
 """
-function rotatemesh(geom::G, θ, ω::SVec, p0=SVec(0,0,0)) where {G}
+function rotatemesh(tri::Tri{3,T}, θ::T,
+                    ω::SVec{3,T}, p=zero(ω)) where {T}
     R = rotationmatrix(θ, ω)
-    
-    return rotatemesh(geom, R, p0)
+    return rotatemesh(tri, R, p)
 end
 
-rotatemesh(geom::G, R::SMatrix, p0=SVec(0,0,0)) where {G} =
-    G([R*(v - p0) + p0 for v in vertices(geom)])
+    
+rotatemesh(tri::Tri{Dim,T}, R::SMatrix{T},
+           p=zero(vertices(tri)[begin])) where {Dim,T} =
+               Tri( (R*(v - p) + p for v in vertices(geom) )...)
 
-rotatemesh(p::SVec, R::SMatrix, p0=SVec(0,0,0)) = (R*(p-p0) + p0)
-rotatemesh(p::SVec, θ::Real, ω::SVec, p0=SVec(0,0,0)) =
-    rotatemesh(p, rotationmatrix(θ, ω), p0)
+
+rotatemesh(pt::SVec{Dim,T}, R::SMatrix{T}, p=zero(pt)) where {Dim,T} =
+    (R*(pt-p) + p)
+
+rotatemesh(pt::SVec{3,T}, θ::T, ω::SVec{3,T}, p=zero(ω)) where {T} =
+    rotatemesh(pt, rotationmatrix(θ, ω), p)
+
+rotatemesh(tri::Tri{2,T}, θ::T, p=SVec2{T}(zero(T),0)) where {T} =
+    roratemesh(tri, rotationmatrix(θ), p)
+
+
+rotatemesh(pt::SVec2{T}, θ::T, p=zero(pt)) where {T} =
+    rotatemesh(pt, rotationmatrix(θ), p)
+
+    

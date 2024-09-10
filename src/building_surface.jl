@@ -30,9 +30,9 @@ function savebsurf(fname, msh::BuildingSurface{T,I,I}, delim='\t') where {T,I<:I
     tab = zeros(ntri, 13) # Vertices (9), side (2) and tag (2)
     for i in 1:ntri
         v1,v2,v3 = vertices(msh.tri[i])
-        x1,y1,z1 = coordinates(v1)
-        x2,y2,z2 = coordinates(v2)
-        x3,y3,z3 = coordinates(v3)
+        x1,y1,z1 = v1
+        x2,y2,z2 = v2
+        x3,y3,z3 = v3
         s1,s2 = nodeside(msh.nodes[i])
         t1, t2 = nodetag(msh.nodes[i])
 
