@@ -61,7 +61,7 @@ translatemesh(p::SVec, u::SVec) = p + u
 
 Calculate the rotation matrix around vector `ω` by an angle of `θ`.
 """
-function rotationmatrix(θ::T, ω=SVec{3,T}(zero(T), 0, 1)) where {T}
+function rotationmatrix(θ::T, ω::SVec{3,T}) where {T}
     c = cos(θ)
     s = sin(θ)
     u,v,w = ω / norm(ω)
