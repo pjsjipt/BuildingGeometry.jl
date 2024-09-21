@@ -36,7 +36,7 @@ For now, only the simples cast is implemented: Each node is a triangle and
 If no pressure tap is located on the triangle, just set A to zero and put a valid
 pressure tap on idx.
 """
-function CpSurface(msh::NodeInfo{T,Tuple{Int,Int}}, side) where {T}
+function CpSurface(msh::AbstractVector{NodeInfo{T,Tuple{Int,Int}}}, side) where {T}
     ntri = length(msh)
     idx = nodeside.(msh, side)
     A = ones(T,ntri,1)
@@ -48,19 +48,40 @@ function CpSurface(msh::NodeInfo{T,Tuple{Int,Int}}, side) where {T}
     return CpSurface(A,hcat(idx))
 end
 
+function assemble!(cpout::AbstractVector{T},
+                   sdata::CpSurface{T}, cp::AbstractVector{T}) where {T}
+
+    nout = length(cpout)
+    @assert nout == size(sdata.A,1) "`cpout` should have one column per mesh node"
+
+    for i in 1:nout
+        cpout[i] = sdata.A[i] * cp[sdata.idx[i]]
+    end
+
+    return cpout
+end
+
+
+assemble(sdata::CpSurface{T}, cp::AbstractVector{T}) where {T} =
+    assemble!(zeros(T, length(sdata.idx)), sdata, cp)
+
+
+    
 function assemble!(cpout::AbstractArray{T},
                    sdata::CpSurface{T}, cp::AbstractArray{T}) where {T}
     
     @assert size(cpout,1) == size(cp,1) "`cpout` should have the same number of rows as `cp`"
-    @assert size(cpout,2) == size(sdata,1) "`cpout` should have one column per mesh node"
+    @assert size(cpout,2) == size(sdata.A,1) "`cpout` should have one column per mesh node"
+    # For now only the simplest case is implemented
     A = sdata.A
     idx = sdata.idx
-    for (cpr, cpoutr) in zip(eachrow(cp), eachrow(cpout))
-        for k in 1:size(sdata,1)
-            cpoutr[k] = zero(T)
-            for (a,i) in zip(A,idx) 
-                cpoutr[k] += a*cpr[i]
-            end
+
+    nt = size(cp,1)
+    nout = size(cpout, 2)
+    
+    for (cpo, cpc) in zip(eachrow(cpout), eachrow(cp))
+        for i in 1:nout
+            cpo[i] = A[i] * cpc[idx[i]]
         end
     end
     return cpout
@@ -72,7 +93,7 @@ end
 Calculates the pressure from pressure measurement on each node of the mesh.
 """
 assemble(sdata::CpSurface{T}, cp::AbstractArray{T}) where {T} =
-    assemble!(zeros(T, size(cp,1), size(sdata.idx,1)))
+    assemble!(zeros(T, size(cp,1), size(sdata.idx,1)), sdata, cp)
 
 (sdata::CpSurface)(cp) = assemble(sdata, cp)
 (sdata::CpSurface)(cpout, cp) = assemble!(cpout, sdata, cp)

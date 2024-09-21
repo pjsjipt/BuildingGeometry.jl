@@ -11,4 +11,6 @@ using Test
     include("test_intersect_mesh.jl")
     include("test_buildsurface.jl")
     include("test_forces.jl")
+    include("test_pressure.jl")
+    
 end
