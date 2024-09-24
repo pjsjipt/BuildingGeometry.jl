@@ -3,8 +3,9 @@
 
 export PressToMesh, assemble!, assemble
 
+abstract type AbstractPressToMesh end
 
-struct PressToMesh{T}
+struct PressToMesh{T} <: AbstractPressToMesh
     "Assembly matrix for each mesh node"
     A::Matrix{T}
     "Degrees of freedom for each node"
