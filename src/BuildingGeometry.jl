@@ -32,7 +32,7 @@ export intersect_tri, intersectmesh!
 export BuildingSurface, savebsurf, loadbsurf, buildsurface, buildingslice, mergemeshes
 export readraw,tri2mesh
 export addforcecontrib!, forcematrix
-export reescalemesh, translatemesh, rotatemesh
+export reescale, translate, rotate
 
 abstract type AbstractBuildGeom end
 

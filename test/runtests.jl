@@ -12,5 +12,5 @@ using Test
     include("test_buildsurface.jl")
     include("test_forces.jl")
     include("test_pressure.jl")
-    
+    include("test_transform.jl")
 end
