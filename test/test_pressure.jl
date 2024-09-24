@@ -25,7 +25,7 @@ let
            nodeinfo(A[1], cpts[3], (3,5)),
            nodeinfo(A[1], cpts[4], (4,5))]
     
-    sdata = CpSurface(msh, 1)
+    sdata = PressToMesh(msh, 1)
 
     @test sdata.A == ones(4,1)
     @test sdata.idx == hcat(1:4)
@@ -41,7 +41,7 @@ let
 
 
     # Let's check the other side
-    sidata = CpSurface(msh,2)
+    sidata = PressToMesh(msh,2)
     @test sidata.A[:,1] == [0.0, 0.0, 1.0, 1.0]
     @test sidata.idx[:,1] == [1,1,5,5]
 

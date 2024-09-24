@@ -1,10 +1,10 @@
 
 # Data structures to project pressure measurement into surface data
 
-export CpSurface, assemble!, assemble
+export PressToMesh, assemble!, assemble
 
 
-struct CpSurface{T}
+struct PressToMesh{T}
     "Assembly matrix for each mesh node"
     A::Matrix{T}
     "Degrees of freedom for each node"
@@ -12,11 +12,11 @@ struct CpSurface{T}
 end
 
 """
-`CpSurface(msh, side)`
+`PressToMesh(msh, side)`
 
-Build a `CpSurface` object.
+Build a `PressToMesh` object.
 
-The `CpSurface` object projects the measurement array on each node of the mesh.
+The `PressToMesh` object projects the measurement array on each node of the mesh.
 
  * `msh::NodeInfo{T,Tuple{Int,Int}}`  Discretization of the building surface.
  * `side` side of the surface
@@ -36,7 +36,7 @@ For now, only the simples cast is implemented: Each node is a triangle and
 If no pressure tap is located on the triangle, just set A to zero and put a valid
 pressure tap on idx.
 """
-function CpSurface(msh::AbstractVector{NodeInfo{T,Tuple{Int,Int}}}, side) where {T}
+function PressToMesh(msh::AbstractVector{NodeInfo{T,Tuple{Int,Int}}}, side) where {T}
     ntri = length(msh)
     idx = nodeside.(msh, side)
     A = ones(T,ntri,1)
@@ -45,11 +45,11 @@ function CpSurface(msh::AbstractVector{NodeInfo{T,Tuple{Int,Int}}}, side) where 
     notap = idx .< 0
     A[notap,1] .= zero(T)
     idx[notap] .= 1
-    return CpSurface(A,hcat(idx))
+    return PressToMesh(A,hcat(idx))
 end
 
 function assemble!(cpout::AbstractVector{T},
-                   sdata::CpSurface{T}, cp::AbstractVector{T}) where {T}
+                   sdata::PressToMesh{T}, cp::AbstractVector{T}) where {T}
 
     nout = length(cpout)
     @assert nout == size(sdata.A,1) "`cpout` should have one column per mesh node"
@@ -62,13 +62,13 @@ function assemble!(cpout::AbstractVector{T},
 end
 
 
-assemble(sdata::CpSurface{T}, cp::AbstractVector{T}) where {T} =
+assemble(sdata::PressToMesh{T}, cp::AbstractVector{T}) where {T} =
     assemble!(zeros(T, length(sdata.idx)), sdata, cp)
 
 
     
 function assemble!(cpout::AbstractArray{T},
-                   sdata::CpSurface{T}, cp::AbstractArray{T}) where {T}
+                   sdata::PressToMesh{T}, cp::AbstractArray{T}) where {T}
     
     @assert size(cpout,1) == size(cp,1) "`cpout` should have the same number of rows as `cp`"
     @assert size(cpout,2) == size(sdata.A,1) "`cpout` should have one column per mesh node"
@@ -92,10 +92,10 @@ end
 
 Calculates the pressure from pressure measurement on each node of the mesh.
 """
-assemble(sdata::CpSurface{T}, cp::AbstractArray{T}) where {T} =
+assemble(sdata::PressToMesh{T}, cp::AbstractArray{T}) where {T} =
     assemble!(zeros(T, size(cp,1), size(sdata.idx,1)), sdata, cp)
 
-(sdata::CpSurface)(cp) = assemble(sdata, cp)
-(sdata::CpSurface)(cpout, cp) = assemble!(cpout, sdata, cp)
+(sdata::PressToMesh)(cp) = assemble(sdata, cp)
+(sdata::PressToMesh)(cpout, cp) = assemble!(cpout, sdata, cp)
 
     
