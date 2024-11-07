@@ -216,10 +216,14 @@ function buildsurface(cad::AbstractVector{Tri{3,Float64}},
         end
         itri1 = sort(vcat(itri...))
         etri1 = sort(etri)
-        
-        if itri1 != etri1
-            error("Internal and external surfaces should be the same")
-        end
+
+        # What happens when the inner surface is different from the outer surface.
+        # Up to now (7.11.2024), they should be exactly the same. But now
+        # I will relax this restriction so that we have more flexibility.
+        # What are the consequences? I hope none.
+        #if itri1 != etri1
+        #    error("Internal and external surfaces should be the same")
+        #end
         
         # Let's start building the mesh
         for sec in sections[begin+1:end]
